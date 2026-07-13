@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Match the Letter 🔤</title>
+<style>
+  :root{
+    --bg1:#a0e7ff; --bg2:#b9a7ff; --bg3:#ffb3d9;
+    --card:#ffffff; --ink:#33324a; --good:#2fbf87; --sel:#ffd23f;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; overflow:hidden; overscroll-behavior:none; }
+  body{
+    font-family:"Comic Sans MS","Baloo 2",system-ui,-apple-system,"Segoe UI",sans-serif;
+    color:var(--ink);
+    background:linear-gradient(160deg,var(--bg1),var(--bg2) 55%,var(--bg3));
+    background-attachment:fixed;
+    overflow:hidden; user-select:none; touch-action:manipulation;
+    display:flex; flex-direction:column; align-items:center;
+    height:100dvh;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  button{ touch-action:manipulation; font-family:inherit; }
+
+  /* ---- Top bar ---- */
+  #topbar{
+    width:100%; max-width:640px; padding:14px 20px;
+    display:flex; justify-content:space-between; align-items:center; gap:12px;
+  }
+  #stars{
+    background:rgba(255,255,255,.85); border-radius:999px;
+    padding:8px 18px; font-size:clamp(20px,5vw,30px); font-weight:800;
+    display:flex; align-items:center; gap:6px; box-shadow:0 4px 0 rgba(0,0,0,.12);
+  }
+  #stars.pop{ animation:pop .5s ease; }
+  #speaker{
+    background:rgba(255,255,255,.85); border:none; border-radius:999px;
+    width:clamp(52px,13vw,64px); height:clamp(52px,13vw,64px);
+    font-size:clamp(24px,6vw,32px); cursor:pointer; box-shadow:0 4px 0 rgba(0,0,0,.12);
+  }
+  #speaker:active{ transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.12); }
+  .tb-left{ display:flex; align-items:center; gap:10px; }
+  .homeBtn{ background:rgba(255,255,255,.85); border-radius:999px;
+    width:clamp(46px,11vw,58px); height:clamp(46px,11vw,58px);
+    display:flex; align-items:center; justify-content:center; font-size:clamp(22px,5.5vw,28px);
+    text-decoration:none; box-shadow:0 4px 0 rgba(0,0,0,.12); }
+  .homeBtn:active{ transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.12); }
+
+  /* ---- Instruction ---- */
+  #hint{ color:#fff; font-weight:800; text-align:center; padding:2px 16px 6px;
+    font-size:clamp(15px,4.2vw,22px); text-shadow:0 2px 0 rgba(0,0,0,.15); }
+
+  /* ---- Board ---- */
+  #stage{ flex:1; width:100%; max-width:640px; display:flex; flex-direction:column;
+    justify-content:center; padding:0 16px 18px; min-height:0; }
+  #board{ display:flex; gap:clamp(14px,7vw,64px); width:100%; justify-content:center; }
+  .column{ display:flex; flex-direction:column; gap:clamp(6px,1.3vh,12px);
+    flex:1 1 0; max-width:230px; }
+  .card{
+    height:clamp(44px,10.5vh,82px); border-radius:20px; border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; position:relative;
+    box-shadow:0 6px 0 rgba(0,0,0,.18); transition:transform .1s, box-shadow .1s;
+  }
+  .card:active{ transform:translateY(3px); box-shadow:0 3px 0 rgba(0,0,0,.18); }
+  .obj-card{ background:var(--card); font-size:clamp(30px,9vw,54px); line-height:1; }
+  .letter-card{ font-size:clamp(32px,9.5vw,56px); font-weight:800; color:#fff; }
+  .letter-card:nth-child(1){ background:#ff6b6b; }
+  .letter-card:nth-child(2){ background:#4dabf7; }
+  .letter-card:nth-child(3){ background:#9775fa; }
+  .letter-card:nth-child(4){ background:#ff922b; }
+  .letter-card:nth-child(5){ background:#f06595; }
+  .letter-card:nth-child(6){ background:#22b8cf; }
+
+  .card.selected{ transform:translateY(-4px) scale(1.05);
+    box-shadow:0 0 0 5px var(--sel), 0 10px 0 rgba(0,0,0,.18); z-index:2; }
+  .card.matched{ background:var(--good)!important; color:#fff; cursor:default;
+    box-shadow:0 6px 0 rgba(0,0,0,.12); animation:matchPop .45s ease; }
+  .card.matched::after{ content:"✓"; position:absolute; top:-8px; right:-8px;
+    width:clamp(22px,6vw,30px); height:clamp(22px,6vw,30px); border-radius:50%;
+    background:#fff; color:var(--good); font-size:clamp(14px,3.6vw,20px); font-weight:900;
+    display:flex; align-items:center; justify-content:center; box-shadow:0 2px 5px rgba(0,0,0,.25); }
+  .card.bad{ animation:nope .4s ease; }
+  @keyframes nope{ 0%,100%{transform:translateX(0)} 20%{transform:translateX(-9px)}
+    40%{transform:translateX(9px)} 60%{transform:translateX(-6px)} 80%{transform:translateX(6px)} }
+  @keyframes matchPop{ 0%{transform:scale(1)} 45%{transform:scale(1.14)} 100%{transform:scale(1)} }
+  @keyframes pop{ 0%{transform:scale(0)} 60%{transform:scale(1.15)} 100%{transform:scale(1)} }
+
+  /* ---- Confetti + toast ---- */
+  .confetti{ position:fixed; top:-20px; width:14px; height:14px; z-index:50; animation:fall linear forwards; }
+  @keyframes fall{ to{ transform:translateY(105dvh) rotate(720deg); } }
+  #toast{ position:fixed; top:40%; left:50%; transform:translate(-50%,-50%) scale(0);
+    font-size:clamp(34px,10vw,60px); font-weight:900; color:#fff; z-index:60;
+    text-shadow:0 4px 0 rgba(0,0,0,.2); pointer-events:none; text-align:center; }
+  #toast.show{ animation:pop .8s ease; }
+
+  /* ---- Start screen ---- */
+  #start{ position:fixed; inset:0; z-index:100;
+    background:linear-gradient(160deg,var(--bg1),var(--bg2) 55%,var(--bg3));
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; text-align:center; padding:20px; }
+  #start .big{ font-size:clamp(70px,22vw,130px); animation:bob 2.2s ease-in-out infinite; }
+  @keyframes bob{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+  #start h1{ font-size:clamp(32px,8.5vw,56px); color:#fff; text-shadow:0 5px 0 rgba(0,0,0,.18); }
+  #start p{ color:#fff; font-size:clamp(15px,4vw,20px); opacity:.95; max-width:22ch; }
+  #play{ background:var(--good); color:#fff; border:none; border-radius:999px;
+    font-size:clamp(26px,7vw,38px); font-weight:800; padding:16px 50px; cursor:pointer;
+    box-shadow:0 8px 0 rgba(0,0,0,.2); }
+  #play:active{ transform:translateY(4px); box-shadow:0 4px 0 rgba(0,0,0,.2); }
+
+  /* ---- Short / landscape screens ---- */
+  @media (max-height:600px){
+    #topbar{ padding:8px 16px; } #hint{ padding:0 16px 4px; }
+    #stage{ padding:0 12px 10px; }
+  }
+  @media (orientation:landscape) and (max-height:500px){
+    #topbar{ padding:4px 14px; }
+    #hint{ font-size:clamp(13px,3.4vw,18px); padding:0 12px 2px; }
+    #stars{ padding:4px 12px; font-size:clamp(15px,3.5vw,22px); }
+    #speaker{ width:38px; height:38px; font-size:18px; }
+    .homeBtn{ width:38px; height:38px; font-size:18px; }
+    #stage{ padding:0 12px 5px; }
+    .card{ height:clamp(28px,10vh,52px); }
+    .obj-card{ font-size:clamp(22px,8.5vh,40px); }
+    .letter-card{ font-size:clamp(24px,9vh,42px); }
+  }
+</style>
+</head>
+<body>
+  <div id="topbar">
+    <div class="tb-left">
+      <a class="homeBtn" href="index.html" title="Home" aria-label="Home">🏠</a>
+      <div id="stars">⭐ <span id="starCount">0</span></div>
+    </div>
+    <button id="speaker" title="Say it again">🔊</button>
+  </div>
+  <div id="hint">Tap a picture, then its first letter!</div>
+
+  <div id="stage">
+    <div id="board">
+      <div class="column" id="objects"></div>
+      <div class="column" id="letters"></div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <div id="start">
+    <div class="big">🔤</div>
+    <h1>Match the Letter!</h1>
+    <p>Match each picture with the letter it starts with.</p>
+    <button id="play">▶ Play</button>
+  </div>
+
+<script>
+(function(){
+  // Many objects per letter → puzzles are randomised with minimal repetition.
+  // The starting letter is derived from the word (word[0]).
+  const POOL = [
+    {e:"🍎",w:"Apple"},{e:"🐜",w:"Ant"},{e:"✈️",w:"Airplane"},{e:"🥑",w:"Avocado"},
+    {e:"🍌",w:"Banana"},{e:"🐻",w:"Bear"},{e:"🐝",w:"Bee"},{e:"🐦",w:"Bird"},{e:"🎈",w:"Balloon"},{e:"🚌",w:"Bus"},
+    {e:"🐱",w:"Cat"},{e:"🚗",w:"Car"},{e:"🍰",w:"Cake"},{e:"🐮",w:"Cow"},{e:"🥕",w:"Carrot"},{e:"🦀",w:"Crab"},{e:"🍪",w:"Cookie"},
+    {e:"🐶",w:"Dog"},{e:"🦆",w:"Duck"},{e:"🍩",w:"Donut"},{e:"🐬",w:"Dolphin"},{e:"🦕",w:"Dinosaur"},{e:"🥁",w:"Drum"},
+    {e:"🐘",w:"Elephant"},{e:"🥚",w:"Egg"},{e:"🦅",w:"Eagle"},{e:"👂",w:"Ear"},{e:"👁️",w:"Eye"},
+    {e:"🐟",w:"Fish"},{e:"🐸",w:"Frog"},{e:"🦊",w:"Fox"},{e:"🔥",w:"Fire"},{e:"🌸",w:"Flower"},{e:"🍟",w:"Fries"},
+    {e:"🍇",w:"Grapes"},{e:"🐐",w:"Goat"},{e:"🦒",w:"Giraffe"},{e:"🎸",w:"Guitar"},{e:"👻",w:"Ghost"},{e:"🎁",w:"Gift"},
+    {e:"🏠",w:"House"},{e:"🎩",w:"Hat"},{e:"🐴",w:"Horse"},{e:"❤️",w:"Heart"},{e:"✋",w:"Hand"},{e:"🔨",w:"Hammer"},
+    {e:"🍦",w:"Ice cream"},{e:"🧊",w:"Ice"},{e:"🏝️",w:"Island"},
+    {e:"🧃",w:"Juice"},{e:"🎃",w:"Jack-o-lantern"},{e:"👖",w:"Jeans"},
+    {e:"🔑",w:"Key"},{e:"🪁",w:"Kite"},{e:"🐨",w:"Koala"},{e:"🦘",w:"Kangaroo"},{e:"🥝",w:"Kiwi"},
+    {e:"🦁",w:"Lion"},{e:"🍃",w:"Leaf"},{e:"🍋",w:"Lemon"},{e:"🐞",w:"Ladybug"},{e:"🍭",w:"Lollipop"},{e:"🦎",w:"Lizard"},
+    {e:"🌙",w:"Moon"},{e:"🐵",w:"Monkey"},{e:"🐭",w:"Mouse"},{e:"🥛",w:"Milk"},{e:"🍄",w:"Mushroom"},{e:"🥭",w:"Mango"},
+    {e:"👃",w:"Nose"},{e:"🥜",w:"Nut"},{e:"📰",w:"Newspaper"},
+    {e:"🍊",w:"Orange"},{e:"🐙",w:"Octopus"},{e:"🦉",w:"Owl"},{e:"🧅",w:"Onion"},{e:"🐂",w:"Ox"},
+    {e:"🐷",w:"Pig"},{e:"🍕",w:"Pizza"},{e:"🐼",w:"Panda"},{e:"✏️",w:"Pencil"},{e:"🐧",w:"Penguin"},{e:"🍍",w:"Pineapple"},{e:"🦜",w:"Parrot"},
+    {e:"👑",w:"Queen"},
+    {e:"🐰",w:"Rabbit"},{e:"🌈",w:"Rainbow"},{e:"🤖",w:"Robot"},{e:"🚀",w:"Rocket"},{e:"💍",w:"Ring"},{e:"🌹",w:"Rose"},
+    {e:"☀️",w:"Sun"},{e:"🐍",w:"Snake"},{e:"🍓",w:"Strawberry"},{e:"🐌",w:"Snail"},{e:"🧦",w:"Sock"},{e:"🦈",w:"Shark"},{e:"🕷️",w:"Spider"},
+    {e:"🌳",w:"Tree"},{e:"🐯",w:"Tiger"},{e:"🐢",w:"Turtle"},{e:"🚂",w:"Train"},{e:"🍅",w:"Tomato"},{e:"🚚",w:"Truck"},
+    {e:"☂️",w:"Umbrella"},{e:"🦄",w:"Unicorn"},{e:"🛸",w:"UFO"},
+    {e:"🎻",w:"Violin"},{e:"🚐",w:"Van"},{e:"🌋",w:"Volcano"},
+    {e:"🍉",w:"Watermelon"},{e:"🐋",w:"Whale"},{e:"🐺",w:"Wolf"},{e:"⌚",w:"Watch"},{e:"🪱",w:"Worm"},
+    {e:"🩻",w:"X-ray"},
+    {e:"🪀",w:"Yo-yo"},{e:"🧶",w:"Yarn"},
+    {e:"🦓",w:"Zebra"},{e:"🧟",w:"Zombie"}
+  ].map(o => ({...o, L:o.w[0].toUpperCase()}));
+
+  const PAIRS = 6;               // pairs per puzzle
+  const $ = id => document.getElementById(id);
+  const objCol = $("objects"), letCol = $("letters");
+  const starCountEl = $("starCount"), toast = $("toast");
+
+  let stars = 0, selected = null, matchedCount = 0, locked = false, lastSpeech = "";
+
+  const rnd = n => Math.floor(Math.random()*n);
+  const pick = arr => arr[rnd(arr.length)];
+  const shuffle = a => { for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];} return a; };
+
+  // ---------- Randomised, low-repetition object selection ----------
+  const byLetter = {};                                  // letter -> [objects]
+  POOL.forEach(o => { (byLetter[o.L] = byLetter[o.L] || []).push(o); });
+  const LETTERS = Object.keys(byLetter);
+
+  // Per-letter queue: cycles through ALL objects of a letter before any repeats.
+  const objQueue = {};
+  function nextObject(L){
+    let q = objQueue[L];
+    if(!q || q.i >= q.order.length){
+      const order = shuffle([...byLetter[L]]);
+      if(q && order.length > 1 && order[0] === q.last) order.push(order.shift()); // no repeat across the cycle boundary
+      q = objQueue[L] = { order, i:0, last: q ? q.last : null };
+    }
+    const o = q.order[q.i++]; q.last = o; return o;
+  }
+  // Letter bag: every letter appears once per shuffled cycle → even, varied spread.
+  let letterBag = [];
+  function nextLetters(n){
+    const out = [];
+    while(out.length < n){
+      if(letterBag.length === 0) letterBag = shuffle([...LETTERS]);
+      const L = letterBag.pop();
+      if(!out.includes(L)) out.push(L);                 // keep the 4 letters distinct within a puzzle
+    }
+    return out;
+  }
+  const drawPuzzle = () => nextLetters(PAIRS).map(nextObject);
+
+  // ---------- Audio: soft, click-free SFX through a compressor ----------
+  let actx = null, master = null;
+  function ensureAudio(){
+    if(!actx){
+      try{
+        actx = new (window.AudioContext||window.webkitAudioContext)();
+        master = actx.createGain(); master.gain.value = 0.85;
+        const comp = actx.createDynamicsCompressor();          // keeps it smooth, never clips
+        master.connect(comp); comp.connect(actx.destination);
+      }catch(e){}
+    }
+    if(actx && actx.state === "suspended") actx.resume();
+  }
+  function tone(freq, start, dur, type, peak){
+    if(!actx) return;
+    const t0 = actx.currentTime + start;
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type || "sine"; o.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(peak || 0.22, t0 + 0.03);   // gentle attack (no click)
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);          // smooth release (no click)
+    o.connect(g); g.connect(master);
+    o.start(t0); o.stop(t0 + dur + 0.03);
+  }
+  const playCorrect = () => { ensureAudio(); [523.25,659.25,783.99].forEach((f,i)=>tone(f, i*0.11, 0.34, "sine", 0.3)); };
+  const playWrong   = () => { ensureAudio(); tone(392,0,0.2,"sine",0.22); tone(311,0.14,0.3,"sine",0.22); };
+  const playWin     = () => { ensureAudio(); [523.25,659.25,783.99,1046.5].forEach((f,i)=>tone(f, i*0.13, 0.42, "sine", 0.28)); };
+  const playBlip    = () => { ensureAudio(); tone(660, 0, 0.09, "sine", 0.14); };
+
+  // ---------- Speech: pick a clear voice, and be cancel-safe ----------
+  let voice = null;
+  function chooseVoice(){
+    if(!("speechSynthesis" in window)) return;
+    const vs = speechSynthesis.getVoices(); if(!vs.length) return;
+    const prefer = ["Google US English","Samantha",
+      "Microsoft Aria Online (Natural) - English (United States)","Microsoft Aria",
+      "Microsoft Jenny Online (Natural) - English (United States)","Microsoft Zira",
+      "Karen","Moira","Alex","Google UK English Female"];
+    voice = prefer.map(n => vs.find(v => v.name === n)).find(Boolean)
+         || vs.find(v => /en[-_]US/i.test(v.lang) && /google|aria|jenny|zira|samantha|female/i.test(v.name))
+         || vs.find(v => /en[-_]US/i.test(v.lang))
+         || vs.find(v => /^en/i.test(v.lang)) || vs[0];
+  }
+  if("speechSynthesis" in window){ chooseVoice(); speechSynthesis.onvoiceschanged = chooseVoice; }
+
+  let speakToken = 0;
+  function speak(text){
+    lastSpeech = text;
+    if(!("speechSynthesis" in window)) return;
+    const my = ++speakToken;
+    try{ speechSynthesis.cancel(); }catch(e){}
+    // Chrome drops an utterance queued right after cancel(); a tiny delay + token = clean, no backlog.
+    setTimeout(() => {
+      if(my !== speakToken) return;              // superseded by a newer tap
+      try{
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        if(voice) u.voice = voice;
+        u.rate = 0.9; u.pitch = 1.05; u.volume = 1; u.lang = (voice && voice.lang) || "en-US";
+        speechSynthesis.speak(u);
+      }catch(e){}
+    }, 45);
+  }
+  $("speaker").addEventListener("click", () => { ensureAudio(); if(lastSpeech) speak(lastSpeech); });
+
+  // ---------- Build a puzzle ----------
+  function newPuzzle(){
+    locked = false; selected = null; matchedCount = 0;
+    objCol.innerHTML = ""; letCol.innerHTML = "";
+    const chosen = drawPuzzle();                            // 4 distinct letters, each a randomised object
+    const objOrder = shuffle([...chosen]);
+    const letOrder = shuffle([...chosen]);
+
+    objOrder.forEach(o => {
+      const b = document.createElement("button");
+      b.className = "card obj-card"; b.textContent = o.e;
+      b.dataset.type = "obj"; b.dataset.letter = o.L; b.dataset.word = o.w;
+      b.setAttribute("aria-label", o.w);
+      b.addEventListener("click", () => tapCard(b));
+      objCol.appendChild(b);
+    });
+    letOrder.forEach(o => {
+      const b = document.createElement("button");
+      b.className = "card letter-card"; b.textContent = o.L;
+      b.dataset.type = "letter"; b.dataset.letter = o.L;
+      b.addEventListener("click", () => tapCard(b));
+      letCol.appendChild(b);
+    });
+    speak("Match the pictures to their first letter.");
+  }
+
+  // ---------- Interaction ----------
+  function clearSelection(){
+    if(selected){ selected.classList.remove("selected"); selected = null; }
+  }
+  function select(card){ selected = card; card.classList.add("selected"); }
+
+  function tapCard(card){
+    if(locked || card.classList.contains("matched")) return;
+    ensureAudio();
+    // speak what was tapped (helps pre-readers)
+    if(card.dataset.type === "obj") speak(card.dataset.word);
+    else { playBlip(); speak("The letter " + card.dataset.letter); }
+
+    if(!selected){ select(card); return; }
+    if(selected === card){ clearSelection(); return; }
+    if(selected.dataset.type === card.dataset.type){ clearSelection(); select(card); return; }
+
+    // one object + one letter → check the match
+    const a = selected, b = card;
+    if(a.dataset.letter === b.dataset.letter) matchPair(a, b);
+    else wrongPair(a, b);
+  }
+
+  function matchPair(a, b){
+    clearSelection();
+    a.classList.add("matched"); b.classList.add("matched");
+    playCorrect();
+    const word = a.dataset.word || b.dataset.word;
+    const L = a.dataset.letter;
+    speak(`${L} is for ${word}!`);
+    addStar();
+    burst(12);
+    matchedCount++;
+    if(matchedCount === PAIRS) win();
+  }
+
+  function wrongPair(a, b){
+    playWrong();
+    speak("Try again.");
+    [a, b].forEach(c => { c.classList.add("bad"); setTimeout(() => c.classList.remove("bad"), 450); });
+    clearSelection();
+  }
+
+  function win(){
+    locked = true;
+    playWin();
+    showToast("🎉 You did it!");
+    burst(60);
+    speak("Hooray! You matched them all!");
+    setTimeout(newPuzzle, 2100);
+  }
+
+  // ---------- Rewards ----------
+  function addStar(){
+    stars++; starCountEl.textContent = stars;
+    const s = $("stars"); s.classList.remove("pop"); void s.offsetWidth; s.classList.add("pop");
+  }
+  function showToast(txt){
+    toast.textContent = txt;
+    toast.classList.remove("show"); void toast.offsetWidth; toast.classList.add("show");
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => { toast.textContent = ""; }, 1900);
+  }
+  const CONF = ["#ff6b6b","#ffd93d","#4dabf7","#51cf66","#ff8fab","#9775fa"];
+  function burst(n){
+    for(let i=0;i<n;i++){
+      const c = document.createElement("div");
+      c.className = "confetti";
+      c.style.left = rnd(100)+"vw";
+      c.style.background = pick(CONF);
+      c.style.borderRadius = rnd(2) ? "50%" : "2px";
+      c.style.animationDuration = (1.1 + Math.random()*1.1)+"s";
+      c.style.animationDelay = (Math.random()*0.25)+"s";
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 2600);
+    }
+  }
+
+  // ---------- Start ----------
+  $("play").addEventListener("click", () => {
+    ensureAudio();
+    if("speechSynthesis" in window){ try{ speechSynthesis.getVoices(); }catch(e){} }
+    $("start").style.display = "none";
+    setTimeout(newPuzzle, 300);
+  });
+
+  // expose a tiny hook for automated testing (harmless in normal play)
+  window.__match = { newPuzzle, tapCard, get state(){ return { stars, matchedCount, locked }; } };
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Memory Match 🧠</title>
+<style>
+  :root{
+    --bg1:#c8f4e4; --bg2:#a7d8ff; --bg3:#d9c2ff;
+    --card:#ffffff; --ink:#33324a; --good:#2fbf87;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; overflow:hidden; overscroll-behavior:none; }
+  body{
+    font-family:"Comic Sans MS","Baloo 2",system-ui,-apple-system,"Segoe UI",sans-serif;
+    color:var(--ink);
+    background:linear-gradient(160deg,var(--bg1),var(--bg2) 55%,var(--bg3));
+    background-attachment:fixed;
+    overflow:hidden; user-select:none; touch-action:manipulation;
+    display:flex; flex-direction:column; align-items:center;
+    height:100dvh;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  button{ touch-action:manipulation; font-family:inherit; }
+
+  /* ---- Top bar ---- */
+  #topbar{ width:100%; max-width:680px; padding:12px 20px;
+    display:flex; justify-content:space-between; align-items:center; gap:12px; }
+  .pill{ background:rgba(255,255,255,.85); border-radius:999px; padding:8px 18px;
+    font-size:clamp(18px,4.6vw,28px); font-weight:800; display:flex; align-items:center; gap:6px;
+    box-shadow:0 4px 0 rgba(0,0,0,.12); }
+  #stars.pop{ animation:pop .5s ease; }
+  #speaker{ background:rgba(255,255,255,.85); border:none; border-radius:999px;
+    width:clamp(50px,12vw,60px); height:clamp(50px,12vw,60px);
+    font-size:clamp(22px,6vw,30px); cursor:pointer; box-shadow:0 4px 0 rgba(0,0,0,.12); }
+  #speaker:active{ transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.12); }
+  .tb-left,.tb-right{ display:flex; align-items:center; gap:10px; }
+  .homeBtn{ background:rgba(255,255,255,.85); border-radius:999px;
+    width:clamp(46px,11vw,56px); height:clamp(46px,11vw,56px);
+    display:flex; align-items:center; justify-content:center; font-size:clamp(20px,5.2vw,26px);
+    text-decoration:none; box-shadow:0 4px 0 rgba(0,0,0,.12); }
+  .homeBtn:active{ transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.12); }
+
+  /* ---- Hint ---- */
+  #hint{ color:#fff; font-weight:800; text-align:center; padding:0 16px 6px;
+    font-size:clamp(15px,4.2vw,22px); text-shadow:0 2px 0 rgba(0,0,0,.15); }
+
+  /* ---- Board ---- */
+  #stage{ flex:1; width:100%; max-width:680px; min-height:0; padding:0 12px 12px; display:flex; }
+  #board{ flex:1; display:grid; gap:var(--gap,10px); place-content:center;
+    grid-auto-rows:var(--s,80px); width:100%; }
+
+  /* ---- Cards (3D flip) ---- */
+  .card{ width:var(--s,80px); height:var(--s,80px); background:transparent; border:none; padding:0;
+    perspective:800px; cursor:pointer; }
+  .inner{ position:relative; width:100%; height:100%; transform-style:preserve-3d;
+    transition:transform .38s cubic-bezier(.4,.7,.3,1.2); }
+  .card.flipped .inner, .card.matched .inner{ transform:rotateY(180deg); }
+  .face{ position:absolute; inset:0; border-radius:16px; display:flex; align-items:center; justify-content:center;
+    backface-visibility:hidden; -webkit-backface-visibility:hidden; box-shadow:0 5px 0 rgba(0,0,0,.15); }
+  .back{ background:linear-gradient(135deg,#6c5ce7,#22c1c3); color:rgba(255,255,255,.95);
+    font-size:calc(var(--s,80px) * .42); font-weight:900; }
+  .back::after{ content:"?"; }
+  .front{ background:var(--card); transform:rotateY(180deg); font-size:calc(var(--s,80px) * .55); line-height:1; }
+  .card.matched{ cursor:default; }
+  .card.matched .front{ background:#c9f7e5; box-shadow:0 0 0 4px var(--good), 0 5px 0 rgba(0,0,0,.1);
+    animation:matchPop .45s ease; }
+  .card.matched .front::after{ content:"✓"; position:absolute; top:-7px; right:-7px;
+    width:clamp(20px,5vw,26px); height:clamp(20px,5vw,26px); border-radius:50%; background:#fff; color:var(--good);
+    font-size:clamp(12px,3vw,16px); font-weight:900; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 2px 5px rgba(0,0,0,.25); }
+  @keyframes matchPop{ 0%{transform:scale(1)} 45%{transform:scale(1.12)} 100%{transform:scale(1)} }
+  @keyframes pop{ 0%{transform:scale(0)} 60%{transform:scale(1.15)} 100%{transform:scale(1)} }
+
+  /* ---- Confetti + toast ---- */
+  .confetti{ position:fixed; top:-20px; width:14px; height:14px; z-index:50; animation:fall linear forwards; }
+  @keyframes fall{ to{ transform:translateY(105dvh) rotate(720deg); } }
+  #toast{ position:fixed; top:42%; left:50%; transform:translate(-50%,-50%) scale(0);
+    font-size:clamp(30px,9vw,56px); font-weight:900; color:#fff; z-index:60;
+    text-shadow:0 4px 0 rgba(0,0,0,.2); pointer-events:none; text-align:center; }
+  #toast.show{ animation:pop .8s ease; }
+
+  /* ---- Start screen ---- */
+  #start{ position:fixed; inset:0; z-index:100;
+    background:linear-gradient(160deg,var(--bg1),var(--bg2) 55%,var(--bg3));
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; text-align:center; padding:20px; }
+  #start .big{ font-size:clamp(70px,22vw,130px); animation:bob 2.2s ease-in-out infinite; }
+  @keyframes bob{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+  #start h1{ font-size:clamp(32px,8.5vw,56px); color:#fff; text-shadow:0 5px 0 rgba(0,0,0,.18); }
+  #start p{ color:#fff; font-size:clamp(15px,4vw,20px); opacity:.95; max-width:22ch; }
+  #play{ background:var(--good); color:#fff; border:none; border-radius:999px;
+    font-size:clamp(26px,7vw,38px); font-weight:800; padding:16px 50px; cursor:pointer; box-shadow:0 8px 0 rgba(0,0,0,.2); }
+  #play:active{ transform:translateY(4px); box-shadow:0 4px 0 rgba(0,0,0,.2); }
+</style>
+</head>
+<body>
+  <div id="topbar">
+    <div class="tb-left">
+      <a class="homeBtn" href="index.html" title="Home" aria-label="Home">🏠</a>
+      <div id="stars" class="pill">⭐ <span id="starCount">0</span></div>
+    </div>
+    <div class="tb-right">
+      <div id="level" class="pill">🧩 <span id="levelNum">1</span></div>
+      <button id="speaker" class="pill" title="Say it again" style="padding:0">🔊</button>
+    </div>
+  </div>
+  <div id="hint">Flip two cards. Find the pairs!</div>
+
+  <div id="stage"><div id="board"></div></div>
+
+  <div id="toast"></div>
+
+  <div id="start">
+    <div class="big">🧠</div>
+    <h1>Memory Match!</h1>
+    <p>Flip the cards two at a time and find the matching pairs.</p>
+    <button id="play">▶ Play</button>
+  </div>
+
+<script>
+(function(){
+  // Visually-distinct, well-supported emoji + names (names are spoken aloud).
+  const POOL = [
+    {e:"🐶",w:"Dog"},{e:"🐱",w:"Cat"},{e:"🐰",w:"Rabbit"},{e:"🦁",w:"Lion"},{e:"🐯",w:"Tiger"},
+    {e:"🐮",w:"Cow"},{e:"🐷",w:"Pig"},{e:"🐸",w:"Frog"},{e:"🐵",w:"Monkey"},{e:"🦊",w:"Fox"},
+    {e:"🐼",w:"Panda"},{e:"🐨",w:"Koala"},{e:"🦄",w:"Unicorn"},{e:"🐙",w:"Octopus"},{e:"🐝",w:"Bee"},
+    {e:"🦋",w:"Butterfly"},{e:"🍎",w:"Apple"},{e:"🍌",w:"Banana"},{e:"🍓",w:"Strawberry"},{e:"🍇",w:"Grapes"},
+    {e:"🍕",w:"Pizza"},{e:"🍩",w:"Donut"},{e:"🚗",w:"Car"},{e:"🚀",w:"Rocket"},{e:"⭐",w:"Star"},
+    {e:"🌈",w:"Rainbow"},{e:"🌸",w:"Flower"},{e:"🎈",w:"Balloon"}
+  ];
+  const MIN_PAIRS = 3, MAX_PAIRS = 8;
+
+  const $ = id => document.getElementById(id);
+  const board = $("board"), toast = $("toast"), starCountEl = $("starCount"), levelNumEl = $("levelNum");
+
+  let stars = 0, pairs = MIN_PAIRS, level = 1, deck = [], firstCard = null, matchedCount = 0, busy = false, lastSpeech = "";
+
+  const rnd = n => Math.floor(Math.random()*n);
+  const pick = arr => arr[rnd(arr.length)];
+  const shuffle = a => { for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];} return a; };
+
+  // ---------- Audio: soft, click-free SFX through a compressor ----------
+  let actx = null, masterGain = null;
+  function ensureAudio(){
+    if(!actx){
+      try{
+        actx = new (window.AudioContext||window.webkitAudioContext)();
+        masterGain = actx.createGain(); masterGain.gain.value = 0.85;
+        const comp = actx.createDynamicsCompressor();
+        masterGain.connect(comp); comp.connect(actx.destination);
+      }catch(e){}
+    }
+    if(actx && actx.state === "suspended") actx.resume();
+  }
+  function tone(freq, start, dur, type, peak){
+    if(!actx) return;
+    const t0 = actx.currentTime + start;
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type || "sine"; o.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(peak || 0.22, t0 + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); g.connect(masterGain);
+    o.start(t0); o.stop(t0 + dur + 0.03);
+  }
+  const playFlip    = () => { ensureAudio(); tone(520, 0, 0.08, "sine", 0.12); };
+  const playCorrect = () => { ensureAudio(); [523.25,659.25,783.99].forEach((f,i)=>tone(f, i*0.11, 0.34, "sine", 0.3)); };
+  const playWrong   = () => { ensureAudio(); tone(392,0,0.18,"sine",0.18); tone(311,0.13,0.26,"sine",0.18); };
+  const playWin     = () => { ensureAudio(); [523.25,659.25,783.99,1046.5].forEach((f,i)=>tone(f, i*0.13, 0.42, "sine", 0.28)); };
+
+  // ---------- Speech: clear voice, cancel-safe ----------
+  let voice = null;
+  function chooseVoice(){
+    if(!("speechSynthesis" in window)) return;
+    const vs = speechSynthesis.getVoices(); if(!vs.length) return;
+    const prefer = ["Google US English","Samantha",
+      "Microsoft Aria Online (Natural) - English (United States)","Microsoft Aria",
+      "Microsoft Jenny Online (Natural) - English (United States)","Microsoft Zira","Karen","Moira","Alex"];
+    voice = prefer.map(n => vs.find(v => v.name === n)).find(Boolean)
+         || vs.find(v => /en[-_]US/i.test(v.lang) && /google|aria|jenny|zira|samantha|female/i.test(v.name))
+         || vs.find(v => /en[-_]US/i.test(v.lang)) || vs.find(v => /^en/i.test(v.lang)) || vs[0];
+  }
+  if("speechSynthesis" in window){ chooseVoice(); speechSynthesis.onvoiceschanged = chooseVoice; }
+  let speakToken = 0;
+  function speak(text){
+    lastSpeech = text;
+    if(!("speechSynthesis" in window)) return;
+    const my = ++speakToken;
+    try{ speechSynthesis.cancel(); }catch(e){}
+    setTimeout(() => {
+      if(my !== speakToken) return;
+      try{
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        if(voice) u.voice = voice;
+        u.rate = 0.92; u.pitch = 1.05; u.volume = 1; u.lang = (voice && voice.lang) || "en-US";
+        speechSynthesis.speak(u);
+      }catch(e){}
+    }, 45);
+  }
+  $("speaker").addEventListener("click", () => { ensureAudio(); if(lastSpeech) speak(lastSpeech); });
+
+  // ---------- Fit the grid to the screen (any card count, any orientation) ----------
+  function layout(){
+    const N = deck.length; if(!N) return;
+    const W = board.clientWidth, H = board.clientHeight;
+    if(W < 2 || H < 2) return;
+    const gap = Math.max(6, Math.min(14, Math.round(Math.min(W,H) * 0.022)));
+    let best = { cols: 1, s: 0 };
+    for(let cols = 1; cols <= N; cols++){
+      const rows = Math.ceil(N / cols);
+      const s = Math.min((W - (cols-1)*gap) / cols, (H - (rows-1)*gap) / rows);
+      if(s > best.s) best = { cols, s };
+    }
+    const size = Math.max(36, Math.floor(Math.min(best.s, 150)));  // floor so sub-pixel rounding never overflows
+    board.style.setProperty("--s", size + "px");
+    board.style.setProperty("--gap", gap + "px");
+    board.style.gridTemplateColumns = "repeat(" + best.cols + ", var(--s))";
+  }
+  let rafId = 0;
+  window.addEventListener("resize", () => { cancelAnimationFrame(rafId); rafId = requestAnimationFrame(layout); });
+
+  // ---------- Build a board ----------
+  function buildBoard(){
+    busy = false; firstCard = null; matchedCount = 0;
+    const chosen = shuffle([...POOL]).slice(0, pairs);
+    deck = shuffle(chosen.flatMap((o, i) => [{ e:o.e, w:o.w, id:i*2 }, { e:o.e, w:o.w, id:i*2+1 }]));
+    board.innerHTML = "";
+    deck.forEach(c => {
+      const btn = document.createElement("button");
+      btn.className = "card"; btn.dataset.e = c.e; btn.dataset.w = c.w;
+      btn.setAttribute("aria-label", "card");
+      const inner = document.createElement("div"); inner.className = "inner";
+      const back = document.createElement("div"); back.className = "face back";
+      const front = document.createElement("div"); front.className = "face front"; front.textContent = c.e;
+      inner.append(back, front); btn.appendChild(inner);
+      btn.addEventListener("click", () => flip(btn));
+      board.appendChild(btn);
+    });
+    levelNumEl.textContent = level;
+    layout();
+    speak("Find the matching pairs!");
+  }
+
+  // ---------- Flip logic ----------
+  function flip(card){
+    if(busy || card.classList.contains("matched") || card.classList.contains("flipped")) return;
+    ensureAudio();
+    card.classList.add("flipped");
+    playFlip();
+    speak(card.dataset.w);
+
+    if(!firstCard){ firstCard = card; return; }
+
+    const a = firstCard, b = card; firstCard = null; busy = true;
+    if(a.dataset.e === b.dataset.e){
+      setTimeout(() => {
+        a.classList.add("matched"); b.classList.add("matched");
+        playCorrect(); speak(a.dataset.w + "! A pair!");
+        addStar(); burst(10);
+        matchedCount++; busy = false;
+        if(matchedCount === pairs) win();
+      }, 380);
+    }else{
+      playWrong();
+      setTimeout(() => { a.classList.remove("flipped"); b.classList.remove("flipped"); busy = false; }, 950);
+    }
+  }
+
+  function win(){
+    busy = true;
+    playWin(); burst(60);
+    showToast("🎉 You did it!");
+    speak("Hooray! You found them all!");
+    level++;
+    pairs = Math.min(pairs + 1, MAX_PAIRS);
+    setTimeout(buildBoard, 2200);
+  }
+
+  // ---------- Rewards ----------
+  function addStar(){
+    stars++; starCountEl.textContent = stars;
+    const s = $("stars"); s.classList.remove("pop"); void s.offsetWidth; s.classList.add("pop");
+  }
+  function showToast(txt){
+    toast.textContent = txt;
+    toast.classList.remove("show"); void toast.offsetWidth; toast.classList.add("show");
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => { toast.textContent = ""; }, 2000);
+  }
+  const CONF = ["#ff6b6b","#ffd93d","#4dabf7","#51cf66","#ff8fab","#9775fa","#22c1c3"];
+  function burst(n){
+    for(let i=0;i<n;i++){
+      const c = document.createElement("div");
+      c.className = "confetti";
+      c.style.left = rnd(100)+"vw";
+      c.style.background = pick(CONF);
+      c.style.borderRadius = rnd(2) ? "50%" : "2px";
+      c.style.animationDuration = (1.1 + Math.random()*1.1)+"s";
+      c.style.animationDelay = (Math.random()*0.25)+"s";
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 2600);
+    }
+  }
+
+  // ---------- Start ----------
+  $("play").addEventListener("click", () => {
+    ensureAudio();
+    if("speechSynthesis" in window){ try{ speechSynthesis.getVoices(); }catch(e){} }
+    $("start").style.display = "none";
+    setTimeout(buildBoard, 250);
+  });
+
+  // testing hook (harmless in normal play)
+  window.__mem = {
+    get state(){ return { pairs, level, matched: matchedCount, stars, busy, cards: deck.length }; },
+    emojis: () => [...board.querySelectorAll(".card")].map(c => c.dataset.e),
+    tapIndex: (i) => flip([...board.querySelectorAll(".card")][i]),
+    layout
+  };
+})();
+</script>
+</body>
+</html>

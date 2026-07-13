@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Play & Learn">
+<title>Play & Learn 🎈</title>
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; overflow:hidden; overscroll-behavior:none; }
+  body{
+    font-family:"Comic Sans MS","Baloo 2",system-ui,-apple-system,"Segoe UI",sans-serif;
+    color:#33324a;
+    background:linear-gradient(160deg,#ffe29a,#a7d8ff 52%,#d9c2ff);
+    background-attachment:fixed;
+    overflow:hidden; user-select:none; touch-action:manipulation;
+    display:flex; flex-direction:column; align-items:center;
+    height:100dvh;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  header{ text-align:center; padding:clamp(10px,3.4vh,26px) 16px 6px; flex:0 0 auto; }
+  h1{ font-size:clamp(30px,8.5vw,54px); color:#fff; text-shadow:0 5px 0 rgba(0,0,0,.16); letter-spacing:.5px; }
+  header p{ color:#fff; font-size:clamp(15px,4vw,22px); font-weight:700; opacity:.92; text-shadow:0 2px 0 rgba(0,0,0,.12); margin-top:2px; }
+
+  #menu{
+    flex:1; min-height:0; width:100%; max-width:640px;
+    display:flex; flex-direction:column; gap:clamp(10px,2.2vh,20px);
+    padding:clamp(8px,2vh,16px) 16px clamp(16px,3vh,24px);
+  }
+  .game{
+    flex:1; display:flex; align-items:center; gap:clamp(12px,4vw,26px);
+    border-radius:28px; padding:clamp(12px,3.2vw,26px) clamp(16px,4.5vw,32px);
+    text-decoration:none; color:#fff; position:relative; overflow:hidden;
+    box-shadow:0 9px 0 rgba(0,0,0,.16); transition:transform .1s, box-shadow .1s;
+  }
+  .game:active{ transform:translateY(5px); box-shadow:0 4px 0 rgba(0,0,0,.16); }
+  .game::after{ content:""; position:absolute; inset:0; background:
+    radial-gradient(circle at 85% 20%, rgba(255,255,255,.25), transparent 45%); pointer-events:none; }
+  .g-math{   background:linear-gradient(135deg,#ffb03a,#ff7aa2); }
+  .g-letter{ background:linear-gradient(135deg,#4dabf7,#9775fa); }
+  .g-memory{ background:linear-gradient(135deg,#20c1c3,#6c5ce7); }
+
+  .icon{ font-size:clamp(44px,13vw,84px); line-height:1; flex:0 0 auto;
+    filter:drop-shadow(0 3px 4px rgba(0,0,0,.2)); animation:bob 2.6s ease-in-out infinite; }
+  .game:nth-child(2) .icon{ animation-delay:.25s; }
+  .game:nth-child(3) .icon{ animation-delay:.5s; }
+  @keyframes bob{ 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(-8px) } }
+
+  .txt{ display:flex; flex-direction:column; flex:1; min-width:0; }
+  .name{ font-size:clamp(22px,6.2vw,38px); font-weight:800; text-shadow:0 2px 0 rgba(0,0,0,.15); }
+  .skill{ font-size:clamp(12px,3.3vw,18px); font-weight:700; opacity:.92; }
+  .go{ font-size:clamp(26px,7vw,42px); opacity:.9; flex:0 0 auto; }
+
+  footer{ flex:0 0 auto; color:#fff; opacity:.8; font-size:clamp(11px,3vw,14px);
+    font-weight:700; padding:0 16px clamp(6px,2vh,14px); text-align:center; }
+
+  /* Landscape: lay the three out side by side */
+  @media (orientation:landscape){
+    #menu{ flex-direction:row; max-width:960px; gap:clamp(10px,2vw,20px); }
+    .game{ flex-direction:column; justify-content:center; text-align:center; gap:clamp(4px,1.4vh,12px);
+      padding:clamp(8px,2vh,20px) 12px; }
+    .icon{ font-size:clamp(40px,11vh,76px); animation-duration:2.6s; }
+    .txt{ flex:0 0 auto; align-items:center; }
+    .go{ display:none; }
+    header{ padding:clamp(6px,2vh,16px) 16px 2px; }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>🎈 Play &amp; Learn</h1>
+    <p>Pick a game!</p>
+  </header>
+
+  <nav id="menu">
+    <a class="game g-math" href="feed-the-monster.html" aria-label="Feed the Monster — counting and adding">
+      <span class="icon">🐲</span>
+      <span class="txt"><span class="name">Feed the Monster</span><span class="skill">Counting &amp; adding to 20</span></span>
+      <span class="go">▶</span>
+    </a>
+    <a class="game g-letter" href="match-the-letter.html" aria-label="Match the Letter — first letters">
+      <span class="icon">🔤</span>
+      <span class="txt"><span class="name">Match the Letter</span><span class="skill">First letters A–Z</span></span>
+      <span class="go">▶</span>
+    </a>
+    <a class="game g-memory" href="memory-match.html" aria-label="Memory Match — find the pairs">
+      <span class="icon">🧠</span>
+      <span class="txt"><span class="name">Memory Match</span><span class="skill">Find the matching pairs</span></span>
+      <span class="go">▶</span>
+    </a>
+  </nav>
+
+  <footer>Tap a game to play 🌟</footer>
+</body>
+</html>
