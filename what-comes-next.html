@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>What Comes Next? 🧩</title>
+<style>
+  :root{
+    --bg1:#c3f7d0; --bg2:#bdeaff; --bg3:#e0d0ff;
+    --card:#ffffff; --ink:#33324a; --good:#2fbf87;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; overflow:hidden; overscroll-behavior:none; }
+  body{
+    font-family:"Comic Sans MS","Baloo 2",system-ui,-apple-system,"Segoe UI",sans-serif;
+    color:var(--ink);
+    background:linear-gradient(160deg,var(--bg1),var(--bg2) 55%,var(--bg3));
+    background-attachment:fixed;
+    overflow:hidden; user-select:none; touch-action:manipulation;
+    display:flex; flex-direction:column; align-items:center;
+    height:100dvh;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  button{ touch-action:manipulation; font-family:inherit; }
+
+  /* ---- Top bar ---- */
+  #topbar{ width:100%; max-width:660px; padding:12px 20px;
+    display:flex; justify-content:space-between; align-items:center; gap:12px; }
+  #stars{ background:rgba(255,255,255,.85); border-radius:999px; padding:8px 18px;
+    font-size:clamp(20px,5vw,30px); font-weight:800; display:flex; align-items:center; gap:6px;
+    box-shadow:0 4px 0 rgba(0,0,0,.12); }
+  #stars.pop{ animation:pop .5s ease; }
+  #speaker{ background:rgba(255,255,255,.85); border:none; border-radius:999px;
+    width:clamp(50px,12vw,60px); height:clamp(50px,12vw,60px); font-size:clamp(22px,6vw,30px);
+    cursor:pointer; box-shadow:0 4px 0 rgba(0,0,0,.12); }
+  #speaker:active{ transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.12); }
+  .tb-left{ display:flex; align-items:center; gap:10px; }
+  .homeBtn{ background:rgba(255,255,255,.85); border-radius:999px;
+    width:clamp(46px,11vw,58px); height:clamp(46px,11vw,58px);
+    display:flex; align-items:center; justify-content:center; font-size:clamp(22px,5.5vw,28px);
+    text-decoration:none; box-shadow:0 4px 0 rgba(0,0,0,.12); }
+  .homeBtn:active{ transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.12); }
+
+  /* ---- Hint ---- */
+  #hint{ color:#fff; font-weight:800; text-align:center; padding:0 16px 4px;
+    font-size:clamp(17px,4.8vw,26px); text-shadow:0 2px 0 rgba(0,0,0,.15); }
+
+  /* ---- Stage ---- */
+  #stage{ flex:1; width:100%; max-width:640px; min-height:0; padding:0 16px 16px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(18px,5vh,44px); }
+
+  /* ---- Pattern row ---- */
+  #patternBox{ background:var(--card); border-radius:26px; box-shadow:0 8px 0 rgba(0,0,0,.1);
+    padding:clamp(12px,3.5vw,22px) clamp(14px,4vw,26px); max-width:100%; }
+  #pattern{ display:flex; flex-wrap:wrap; align-items:center; justify-content:center;
+    gap:clamp(6px,2vw,12px); font-size:clamp(30px,8vw,52px); line-height:1; }
+  #pattern.many{ font-size:clamp(24px,6.4vw,42px); }
+  .tile{ line-height:1; }
+  .blank{ display:inline-flex; align-items:center; justify-content:center;
+    width:1.3em; height:1.3em; border:3px dashed #b7aee0; border-radius:16px; color:#b7aee0; font-weight:900; }
+  .filled{ animation:pop .5s ease; }
+
+  /* ---- Answer choices ---- */
+  #answers{ display:flex; gap:clamp(12px,4vw,24px); justify-content:center; align-items:center; flex-wrap:wrap; }
+  .ans{ width:clamp(66px,21vw,108px); height:clamp(66px,21vw,108px); border:none; border-radius:22px; background:var(--card);
+    font-size:clamp(34px,10vw,58px); line-height:1; cursor:pointer; box-shadow:0 6px 0 rgba(0,0,0,.18);
+    display:flex; align-items:center; justify-content:center; transition:transform .08s; }
+  .ans:active{ transform:translateY(4px); box-shadow:0 3px 0 rgba(0,0,0,.18); }
+  .ans.right{ animation:yes .5s ease; box-shadow:0 0 0 5px var(--good), 0 6px 0 rgba(0,0,0,.14); }
+  .ans.wrong{ animation:nope .4s ease; opacity:.4; pointer-events:none; }
+  @keyframes nope{ 0%,100%{transform:translateX(0)} 25%{transform:translateX(-10px)} 75%{transform:translateX(10px)} }
+  @keyframes yes{ 0%{transform:scale(1)} 50%{transform:scale(1.22) rotate(4deg)} 100%{transform:scale(1)} }
+  @keyframes pop{ 0%{transform:scale(0)} 60%{transform:scale(1.18)} 100%{transform:scale(1)} }
+
+  /* ---- Confetti + toast ---- */
+  .confetti{ position:fixed; top:-20px; width:14px; height:14px; z-index:50; animation:fall linear forwards; }
+  @keyframes fall{ to{ transform:translateY(105dvh) rotate(720deg); } }
+  #toast{ position:fixed; top:40%; left:50%; transform:translate(-50%,-50%) scale(0);
+    font-size:clamp(32px,9vw,58px); font-weight:900; color:#fff; z-index:60;
+    text-shadow:0 4px 0 rgba(0,0,0,.2); pointer-events:none; text-align:center; }
+  #toast.show{ animation:pop .8s ease; }
+
+  /* ---- Start screen ---- */
+  #start{ position:fixed; inset:0; z-index:100;
+    background:linear-gradient(160deg,var(--bg1),var(--bg2) 55%,var(--bg3));
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; text-align:center; padding:20px; }
+  #start .big{ font-size:clamp(70px,22vw,130px); animation:bob 2.2s ease-in-out infinite; }
+  @keyframes bob{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+  #start h1{ font-size:clamp(30px,8vw,52px); color:#fff; text-shadow:0 5px 0 rgba(0,0,0,.18); }
+  #start p{ color:#fff; font-size:clamp(15px,4vw,20px); opacity:.95; max-width:24ch; }
+  #play{ background:var(--good); color:#fff; border:none; border-radius:999px;
+    font-size:clamp(26px,7vw,38px); font-weight:800; padding:16px 50px; cursor:pointer; box-shadow:0 8px 0 rgba(0,0,0,.2); }
+  #play:active{ transform:translateY(4px); box-shadow:0 4px 0 rgba(0,0,0,.2); }
+
+  /* ---- Short / landscape ---- */
+  @media (orientation:landscape) and (max-height:500px){
+    #topbar{ padding:4px 14px; }
+    #hint{ font-size:clamp(14px,3.6vw,20px); padding:0 12px 2px; }
+    #stars{ padding:4px 12px; font-size:clamp(15px,3.5vw,22px); }
+    #speaker{ width:40px; height:40px; font-size:20px; }
+    .homeBtn{ width:40px; height:40px; font-size:20px; }
+    #stage{ padding:0 12px 6px; gap:clamp(8px,3vh,20px); }
+    #pattern{ font-size:clamp(22px,5.4vh,40px); } #pattern.many{ font-size:clamp(18px,4.4vh,32px); }
+    #patternBox{ padding:8px 14px; }
+    .ans{ width:clamp(52px,17vh,84px); height:clamp(52px,17vh,84px); font-size:clamp(28px,9vh,46px); }
+  }
+</style>
+</head>
+<body>
+  <div id="topbar">
+    <div class="tb-left">
+      <a class="homeBtn" href="index.html" title="Home" aria-label="Home">🏠</a>
+      <div id="stars">⭐ <span id="starCount">0</span></div>
+    </div>
+    <button id="speaker" title="Say it again">🔊</button>
+  </div>
+  <div id="hint">🦉 What comes next?</div>
+
+  <div id="stage">
+    <div id="patternBox"><div id="pattern"></div></div>
+    <div id="answers"></div>
+  </div>
+
+  <div id="toast"></div>
+
+  <div id="start">
+    <div class="big">🧩</div>
+    <h1>What Comes Next?</h1>
+    <p>Look at the pattern, then tap what comes next.</p>
+    <button id="play">▶ Play</button>
+  </div>
+
+<script>
+(function(){
+  // Thematic symbol sets (all visually distinct within a set).
+  const SETS = [
+    ["🔴","🔵","🟢","🟡","🟣","🟠"],
+    ["🟥","🟦","🟩","🟨","🟪","🟧"],
+    ["🍎","🍌","🍇","🍓","🍊","🍉"],
+    ["🐶","🐱","🐰","🦁","🐸","🐵"],
+    ["⭐","❤️","🌸","🎈","🚗","🚀"]
+  ];
+  // Repeating-pattern templates (index into the chosen symbols).
+  const T = { AB:[0,1], ABC:[0,1,2], AAB:[0,0,1], ABB:[0,1,1], AABB:[0,0,1,1] };
+
+  const $ = id => document.getElementById(id);
+  const patternEl = $("pattern"), answersEl = $("answers"), toast = $("toast"), starCountEl = $("starCount");
+
+  let stars = 0, solved = 0, current = null, locked = false, lastSpeech = "";
+
+  const rnd = n => Math.floor(Math.random()*n);
+  const pick = arr => arr[rnd(arr.length)];
+  const shuffle = a => { for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];} return a; };
+
+  // ---------- Audio: soft, click-free SFX through a compressor ----------
+  let actx = null, masterGain = null;
+  function ensureAudio(){
+    if(!actx){
+      try{
+        actx = new (window.AudioContext||window.webkitAudioContext)();
+        masterGain = actx.createGain(); masterGain.gain.value = 0.85;
+        const comp = actx.createDynamicsCompressor();
+        masterGain.connect(comp); comp.connect(actx.destination);
+      }catch(e){}
+    }
+    if(actx && actx.state === "suspended") actx.resume();
+  }
+  function tone(freq, start, dur, type, peak){
+    if(!actx) return;
+    const t0 = actx.currentTime + start;
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type || "sine"; o.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(peak || 0.22, t0 + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); g.connect(masterGain);
+    o.start(t0); o.stop(t0 + dur + 0.03);
+  }
+  const playCorrect = () => { ensureAudio(); [523.25,659.25,783.99].forEach((f,i)=>tone(f, i*0.11, 0.34, "sine", 0.3)); };
+  const playWrong   = () => { ensureAudio(); tone(392,0,0.18,"sine",0.18); tone(311,0.13,0.26,"sine",0.18); };
+  const playStar    = () => { ensureAudio(); [659.25,783.99,1046.5].forEach((f,i)=>tone(f, i*0.09, 0.3, "sine", 0.26)); };
+
+  // ---------- Speech: clear voice, cancel-safe ----------
+  let voice = null;
+  function chooseVoice(){
+    if(!("speechSynthesis" in window)) return;
+    const vs = speechSynthesis.getVoices(); if(!vs.length) return;
+    const prefer = ["Google US English","Samantha",
+      "Microsoft Aria Online (Natural) - English (United States)","Microsoft Aria",
+      "Microsoft Jenny Online (Natural) - English (United States)","Microsoft Zira","Karen","Moira","Alex"];
+    voice = prefer.map(n => vs.find(v => v.name === n)).find(Boolean)
+         || vs.find(v => /en[-_]US/i.test(v.lang) && /google|aria|jenny|zira|samantha|female/i.test(v.name))
+         || vs.find(v => /en[-_]US/i.test(v.lang)) || vs.find(v => /^en/i.test(v.lang)) || vs[0];
+  }
+  if("speechSynthesis" in window){ chooseVoice(); speechSynthesis.onvoiceschanged = chooseVoice; }
+  let speakToken = 0;
+  function speak(text){
+    lastSpeech = text;
+    if(!("speechSynthesis" in window)) return;
+    const my = ++speakToken;
+    try{ speechSynthesis.cancel(); }catch(e){}
+    setTimeout(() => {
+      if(my !== speakToken) return;
+      try{
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        if(voice) u.voice = voice;
+        u.rate = 0.92; u.pitch = 1.05; u.volume = 1; u.lang = (voice && voice.lang) || "en-US";
+        speechSynthesis.speak(u);
+      }catch(e){}
+    }, 45);
+  }
+  $("speaker").addEventListener("click", () => { ensureAudio(); if(lastSpeech) speak(lastSpeech); });
+
+  // ---------- Pattern generation ----------
+  function availableTemplates(){
+    if(solved < 3) return [T.AB];
+    if(solved < 8) return [T.AB, T.AAB, T.ABB];
+    return [T.AB, T.ABC, T.AAB, T.ABB, T.AABB];
+  }
+  function makePattern(){
+    const template = pick(availableTemplates());
+    const unitLen = template.length;
+    const numSymbols = Math.max(...template) + 1;          // 2 or 3 distinct symbols
+    const set = shuffle([...pick(SETS)]);
+    const symbols = set.slice(0, numSymbols);
+    const unit = template.map(i => symbols[i]);
+    let shown = 4 + rnd(4);                                 // 4..7 items shown
+    const minShown = unitLen + 2;                           // ensure the pattern is clearly visible
+    if(shown < minShown) shown = minShown;
+    if(shown > 7) shown = 7;
+    const at = i => unit[i % unitLen];
+    const shownItems = Array.from({length: shown}, (_, i) => at(i));
+    const answer = at(shown);                              // the correct next item
+    // 3 unique choices, always including the answer
+    const choiceSet = new Set(symbols);                    // the pattern's symbols
+    let gi = numSymbols;
+    while(choiceSet.size < 3 && gi < set.length) choiceSet.add(set[gi++]);
+    const choices = shuffle([...choiceSet]).slice(0, 3);
+    if(!choices.includes(answer)){ choices[rnd(3)] = answer; }
+    return { template, unit, unitLen, shownItems, answer, choices };
+  }
+
+  function render(p){
+    patternEl.innerHTML = ""; answersEl.innerHTML = "";
+    patternEl.className = (p.shownItems.length + 1) > 6 ? "many" : "";
+    p.shownItems.forEach(sym => {
+      const t = document.createElement("span"); t.className = "tile"; t.textContent = sym;
+      patternEl.appendChild(t);
+    });
+    const blank = document.createElement("span");
+    blank.className = "tile blank"; blank.id = "blank"; blank.textContent = "?";
+    patternEl.appendChild(blank);
+    p.choices.forEach(sym => {
+      const b = document.createElement("button");
+      b.className = "ans"; b.textContent = sym;
+      b.addEventListener("click", () => onAnswer(sym, b));
+      answersEl.appendChild(b);
+    });
+    speak("What comes next?");
+  }
+
+  function nextPattern(){ locked = false; current = makePattern(); render(current); }
+
+  const PRAISE = ["Yes!","Great!","Nice!","Wow!","Yay!","Woohoo!"];
+  function onAnswer(sym, btn){
+    if(locked) return;
+    if(sym === current.answer){
+      locked = true;
+      btn.classList.add("right");
+      const blank = $("blank");
+      if(blank){ blank.classList.remove("blank"); blank.classList.add("filled"); blank.textContent = current.answer; }
+      playCorrect();
+      const word = pick(PRAISE);
+      speak(word); showToast(word + " 🎉");
+      confetti(); addStar(); solved++;
+      setTimeout(nextPattern, 1700);
+    }else{
+      btn.classList.add("wrong");
+      playWrong(); speak("Try again.");
+    }
+  }
+
+  function addStar(){
+    stars++; starCountEl.textContent = stars;
+    const s = $("stars"); s.classList.remove("pop"); void s.offsetWidth; s.classList.add("pop");
+    if(stars % 5 === 0) setTimeout(() => { playStar(); showToast("⭐ " + stars + " stars! ⭐"); speak("Amazing! " + stars + " stars!"); }, 700);
+  }
+  function showToast(txt){
+    toast.textContent = txt;
+    toast.classList.remove("show"); void toast.offsetWidth; toast.classList.add("show");
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => { toast.textContent = ""; }, 1700);
+  }
+  const CONF = ["#ff6b6b","#ffd93d","#4dabf7","#51cf66","#ff8fab","#9775fa"];
+  function confetti(){
+    for(let i=0;i<40;i++){
+      const c = document.createElement("div");
+      c.className = "confetti";
+      c.style.left = rnd(100)+"vw";
+      c.style.background = pick(CONF);
+      c.style.borderRadius = rnd(2) ? "50%" : "2px";
+      c.style.animationDuration = (1.1 + Math.random()*1.1)+"s";
+      c.style.animationDelay = (Math.random()*0.3)+"s";
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 2600);
+    }
+  }
+
+  // ---------- Start ----------
+  $("play").addEventListener("click", () => {
+    ensureAudio();
+    if("speechSynthesis" in window){ try{ speechSynthesis.getVoices(); }catch(e){} }
+    $("start").style.display = "none";
+    setTimeout(nextPattern, 250);
+  });
+
+  // testing hook (harmless in normal play)
+  window.__pat = {
+    get state(){ return { solved, stars, locked, answer: current && current.answer,
+      choices: current && current.choices, shown: current && current.shownItems, unit: current && current.unit }; },
+    tapAnswer: (sym) => { const b = [...answersEl.querySelectorAll(".ans")].find(x => x.textContent === sym); if(b) b.click(); },
+    tapIndex: (i) => { const b = answersEl.querySelectorAll(".ans")[i]; if(b) b.click(); },
+    newPattern: nextPattern
+  };
+})();
+</script>
+</body>
+</html>
