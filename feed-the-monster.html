@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Feed the Monster 🍎</title>
+<style>
+  :root{
+    --bg1:#ffd93d; --bg2:#ff8fab; --bg3:#6bc5ff;
+    --card:#ffffff; --ink:#33324a;
+    --good:#38d39f; --btn:#7b6cff;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; overflow:hidden; overscroll-behavior:none; }
+  body{
+    font-family:"Comic Sans MS","Baloo 2",system-ui,-apple-system,"Segoe UI",sans-serif;
+    color:var(--ink);
+    background:linear-gradient(160deg,var(--bg1),var(--bg2) 55%,var(--bg3));
+    background-attachment:fixed;
+    overflow:hidden; user-select:none; touch-action:manipulation;
+    display:flex; flex-direction:column; align-items:center;
+    height:100dvh;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  button{ touch-action:manipulation; }
+
+  /* ---- Top bar: score ---- */
+  #topbar{
+    width:100%; max-width:700px; padding:14px 20px;
+    display:flex; justify-content:space-between; align-items:center; gap:12px;
+  }
+  #stars{
+    background:rgba(255,255,255,.85); border-radius:999px;
+    padding:8px 18px; font-size:clamp(20px,5vw,30px); font-weight:800;
+    display:flex; align-items:center; gap:6px; box-shadow:0 4px 0 rgba(0,0,0,.12);
+  }
+  #stars .pop{ animation:pop .5s ease; }
+  #speaker{
+    background:rgba(255,255,255,.85); border:none; border-radius:999px;
+    width:clamp(52px,13vw,64px); height:clamp(52px,13vw,64px);
+    font-size:clamp(24px,6vw,32px); cursor:pointer; box-shadow:0 4px 0 rgba(0,0,0,.12);
+  }
+  #speaker:active{ transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.12); }
+  .tb-left{ display:flex; align-items:center; gap:10px; }
+  .homeBtn{ background:rgba(255,255,255,.85); border-radius:999px;
+    width:clamp(46px,11vw,58px); height:clamp(46px,11vw,58px);
+    display:flex; align-items:center; justify-content:center; font-size:clamp(22px,5.5vw,28px);
+    text-decoration:none; box-shadow:0 4px 0 rgba(0,0,0,.12); }
+  .homeBtn:active{ transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.12); }
+
+  /* ---- Stage ---- */
+  #stage{
+    flex:1; width:100%; max-width:700px;
+    display:flex; flex-direction:column; align-items:center; justify-content:space-between;
+    padding:0 16px 22px; gap:8px; min-height:0;
+  }
+
+  /* ---- Monster ---- */
+  #monster{ width:clamp(120px,34vw,190px); flex:0 0 auto; animation:bob 2.6s ease-in-out infinite; }
+  #monster.eating{ animation:chew .35s ease 3; }
+  #monster.sad{ animation:shakeM .4s ease; }
+  @keyframes bob{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+  @keyframes chew{ 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-14px) scale(1.06)} }
+  @keyframes shakeM{ 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+  .eye-lid{ transform-box:fill-box; transform-origin:center; animation:blink 4s infinite; }
+  @keyframes blink{ 0%,92%,100%{transform:scaleY(1)} 96%{transform:scaleY(.08)} }
+  #mouthOpen,#mouthSad{ opacity:0; }
+  #monster.eating #mouthSmile{ opacity:0; } #monster.eating #mouthOpen{ opacity:1; }
+  #monster.sad #mouthSmile{ opacity:0; } #monster.sad #mouthSad{ opacity:1; }
+  .cheek{ opacity:0; transition:opacity .3s; } #monster.eating .cheek{ opacity:.55; }
+
+  /* ---- Problem ---- */
+  #bubble{
+    background:var(--card); border-radius:26px; padding:16px 20px;
+    box-shadow:0 8px 0 rgba(0,0,0,.10); width:100%;
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+  }
+  #fruits{
+    display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:4px 8px;
+    font-size:clamp(30px,8vw,50px); line-height:1.1; min-height:1.3em;
+  }
+  #fruits .op{ font-weight:800; color:#ff5d8f; margin:0 4px; }
+  #fruits .grp{ display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:2px; max-width:100%; }
+  #fruits.d1{ font-size:clamp(30px,8vw,50px); }
+  #fruits.d2{ font-size:clamp(26px,6.8vw,44px); }
+  #fruits.d3{ font-size:clamp(22px,5.6vw,36px); }
+  #fruits.d4{ font-size:clamp(18px,4.8vw,30px); }
+  #fruits .eaten{ position:relative; filter:grayscale(1); opacity:.45; }
+  #fruits .eaten::after{ content:"❌"; position:absolute; inset:0; display:flex;
+    align-items:center; justify-content:center; font-size:.7em; }
+  #fruits .go{ animation:eatUp .6s ease forwards; }
+  @keyframes eatUp{ to{ transform:translateY(-120px) scale(.2); opacity:0; } }
+  #equation{ font-size:clamp(26px,7vw,40px); font-weight:800; letter-spacing:2px; }
+
+  /* ---- Answer buttons ---- */
+  #answers{ display:flex; flex-wrap:wrap; gap:clamp(8px,2.4vw,16px); width:100%;
+    justify-content:center; align-content:center; }
+  .ans{
+    flex:1 1 82px; min-width:74px; max-width:120px;
+    height:clamp(64px,15vw,108px); border:none; border-radius:22px;
+    font-size:clamp(34px,9vw,56px); font-weight:800; color:#fff; cursor:pointer;
+    box-shadow:0 6px 0 rgba(0,0,0,.22); transition:transform .08s;
+    font-family:inherit; display:flex; align-items:center; justify-content:center;
+  }
+  .ans:nth-child(1){ background:#ff6b6b; } .ans:nth-child(2){ background:#4dabf7; }
+  .ans:nth-child(3){ background:#51cf66; } .ans:nth-child(4){ background:#ffa94d; }
+  .ans:nth-child(5){ background:#9775fa; }
+  .ans:active{ transform:translateY(4px); box-shadow:0 3px 0 rgba(0,0,0,.22); }
+  .ans.wrong{ animation:nope .4s ease; opacity:.35; pointer-events:none; }
+  .ans.right{ animation:yes .5s ease; }
+  @keyframes nope{ 0%,100%{transform:translateX(0)} 25%{transform:translateX(-10px)} 75%{transform:translateX(10px)} }
+  @keyframes yes{ 0%{transform:scale(1)} 50%{transform:scale(1.25) rotate(4deg)} 100%{transform:scale(1)} }
+
+  /* ---- Confetti + toast ---- */
+  .confetti{ position:fixed; top:-20px; width:14px; height:14px; z-index:50;
+    animation:fall linear forwards; }
+  @keyframes fall{ to{ transform:translateY(105dvh) rotate(720deg); } }
+  #toast{
+    position:fixed; top:38%; left:50%; transform:translate(-50%,-50%) scale(0);
+    font-size:clamp(34px,10vw,64px); font-weight:900; color:#fff; z-index:60;
+    text-shadow:0 4px 0 rgba(0,0,0,.2); pointer-events:none; text-align:center;
+  }
+  #toast.show{ animation:pop .8s ease; }
+  @keyframes pop{ 0%{transform:translate(-50%,-50%) scale(0)} 60%{transform:translate(-50%,-50%) scale(1.15)} 100%{transform:translate(-50%,-50%) scale(1)} }
+
+  /* ---- Start screen ---- */
+  #start{
+    position:fixed; inset:0; z-index:100; background:linear-gradient(160deg,var(--bg1),var(--bg2) 55%,var(--bg3));
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px; text-align:center;
+  }
+  #start h1{ font-size:clamp(34px,9vw,58px); color:#fff; text-shadow:0 5px 0 rgba(0,0,0,.18); }
+  #start .big{ font-size:clamp(90px,26vw,150px); animation:bob 2.2s ease-in-out infinite; }
+  #play{
+    background:var(--good); color:#fff; border:none; border-radius:999px;
+    font-size:clamp(28px,7vw,40px); font-weight:800; padding:18px 54px; cursor:pointer;
+    box-shadow:0 8px 0 rgba(0,0,0,.2); font-family:inherit;
+  }
+  #play:active{ transform:translateY(4px); box-shadow:0 4px 0 rgba(0,0,0,.2); }
+  #start p{ color:#fff; font-size:clamp(15px,4vw,20px); opacity:.9; }
+
+  /* ---- Small / short screens: keep everything on one page, no scroll ---- */
+  @media (max-height:720px){
+    #monster{ width:clamp(96px,22vw,150px); }
+    #bubble{ padding:12px 16px; }
+  }
+  @media (max-height:600px){
+    #monster{ width:clamp(78px,18vw,120px); }
+    #topbar{ padding:8px 16px; }
+    #stage{ padding:0 12px 12px; gap:6px; }
+    #fruits{ font-size:clamp(24px,6.5vw,40px); }
+  }
+  /* ---- Landscape phones: compact everything so it fits without scroll ---- */
+  @media (max-height:520px) and (orientation:landscape){
+    #topbar{ padding:3px 14px; }
+    #stars{ padding:4px 12px; font-size:clamp(15px,3.5vw,22px); }
+    #speaker{ width:40px; height:40px; font-size:20px; }
+    .homeBtn{ width:40px; height:40px; font-size:20px; }
+    #stage{ padding:0 12px 2px; gap:2px; }
+    #monster{ width:clamp(44px,9vh,80px); }
+    #bubble{ padding:4px 12px; gap:1px; }
+    #fruits.d1{ font-size:clamp(18px,5vh,30px); }
+    #fruits.d2{ font-size:clamp(16px,4.3vh,26px); }
+    #fruits.d3{ font-size:clamp(13px,3.4vh,22px); }
+    #fruits.d4{ font-size:clamp(11px,2.8vh,18px); }
+    #equation{ font-size:clamp(18px,3.6vw,28px); }
+    .ans{ height:clamp(42px,13vh,66px); }
+  }
+</style>
+</head>
+<body>
+  <div id="topbar">
+    <div class="tb-left">
+      <a class="homeBtn" href="index.html" title="Home" aria-label="Home">🏠</a>
+      <div id="stars">⭐ <span id="starCount">0</span></div>
+    </div>
+    <button id="speaker" title="Say it again">🔊</button>
+  </div>
+
+  <div id="stage">
+    <!-- Monster -->
+    <svg id="monster" viewBox="0 0 200 210" aria-label="monster">
+      <ellipse cx="100" cy="196" rx="55" ry="10" fill="rgba(0,0,0,.15)"/>
+      <path d="M52 120 q-14 40 -2 60" stroke="#3aa99a" stroke-width="16" fill="none" stroke-linecap="round"/>
+      <path d="M148 120 q14 40 2 60" stroke="#3aa99a" stroke-width="16" fill="none" stroke-linecap="round"/>
+      <path d="M64 30 q-6 -22 10 -26" stroke="#3aa99a" stroke-width="9" fill="none" stroke-linecap="round"/>
+      <path d="M136 30 q6 -22 -10 -26" stroke="#3aa99a" stroke-width="9" fill="none" stroke-linecap="round"/>
+      <circle cx="70" cy="8" r="8" fill="#ffd93d"/><circle cx="130" cy="8" r="8" fill="#ffd93d"/>
+      <ellipse cx="100" cy="112" rx="82" ry="78" fill="#4ecdc4"/>
+      <ellipse cx="100" cy="150" rx="46" ry="34" fill="#bff3ec"/>
+      <ellipse class="cheek" cx="55" cy="120" rx="14" ry="10" fill="#ff8fab"/>
+      <ellipse class="cheek" cx="145" cy="120" rx="14" ry="10" fill="#ff8fab"/>
+      <g>
+        <circle cx="74" cy="88" r="24" fill="#fff"/><circle cx="126" cy="88" r="24" fill="#fff"/>
+        <circle class="eye-lid" cx="74" cy="88" r="24" fill="#fff"/>
+        <circle class="eye-lid" cx="126" cy="88" r="24" fill="#fff"/>
+        <circle cx="79" cy="92" r="10" fill="#33324a"/><circle cx="131" cy="92" r="10" fill="#33324a"/>
+        <circle cx="83" cy="88" r="3.5" fill="#fff"/><circle cx="135" cy="88" r="3.5" fill="#fff"/>
+      </g>
+      <path id="mouthSmile" d="M78 132 q22 22 44 0" stroke="#2b6d64" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <g id="mouthOpen">
+        <ellipse cx="100" cy="140" rx="24" ry="20" fill="#2b3a45"/>
+        <ellipse cx="100" cy="152" rx="14" ry="10" fill="#ff6b8b"/>
+      </g>
+      <path id="mouthSad" d="M78 142 q22 -20 44 0" stroke="#2b6d64" stroke-width="7" fill="none" stroke-linecap="round"/>
+    </svg>
+
+    <!-- Problem -->
+    <div id="bubble">
+      <div id="fruits"></div>
+      <div id="equation"></div>
+    </div>
+
+    <!-- Answers -->
+    <div id="answers"></div>
+  </div>
+
+  <div id="toast"></div>
+
+  <!-- Start overlay -->
+  <div id="start">
+    <div class="big">🐲</div>
+    <h1>Feed the Monster!</h1>
+    <p>Count the fruit and tap the number 🍎</p>
+    <button id="play">▶ Play</button>
+  </div>
+
+<script>
+(function(){
+  const FOODS = ["🍎","🍓","🍌","🍊","🍇","🍪","🍩","🧁","🍒","🥕"];
+  const FOOD_NAMES = {"🍎":"apples","🍓":"strawberries","🍌":"bananas","🍊":"oranges","🍇":"grapes","🍪":"cookies","🍩":"donuts","🧁":"cupcakes","🍒":"cherries","🥕":"carrots"};
+
+  const $ = id => document.getElementById(id);
+  const fruitsEl = $("fruits"), eqEl = $("equation"), ansEl = $("answers");
+  const monster = $("monster"), toast = $("toast"), starCountEl = $("starCount");
+
+  let stars = 0, current = null, locked = false, lastSpeech = "";
+
+  // ---------- Random helpers (seed-free) ----------
+  const rnd = n => Math.floor(Math.random()*n);
+  const pick = arr => arr[rnd(arr.length)];
+  const shuffle = a => { for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];} return a; };
+
+  // ---------- Audio (synth, no files) ----------
+  let actx = null;
+  function ensureAudio(){
+    if(!actx){ try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+    if(actx && actx.state === "suspended") actx.resume();
+  }
+  function beep(freq, start, dur, type, gain){
+    if(!actx) return;
+    const t0 = actx.currentTime + start;
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type||"sine"; o.frequency.value = freq;
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(gain||0.18, t0+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+    o.connect(g).connect(actx.destination);
+    o.start(t0); o.stop(t0+dur);
+  }
+  const playCorrect = () => { ensureAudio(); [523.25,659.25,783.99,1046.5].forEach((f,i)=>beep(f,i*0.09,0.28,"triangle",0.22)); };
+  const playWrong   = () => { ensureAudio(); beep(330,0,0.18,"sine",0.14); beep(262,0.12,0.24,"sine",0.14); };
+  const playStar    = () => { ensureAudio(); [784,988,1319].forEach((f,i)=>beep(f,i*0.08,0.3,"triangle",0.2)); };
+
+  // ---------- Speech (for pre-readers) ----------
+  function speak(text){
+    lastSpeech = text;
+    if(!("speechSynthesis" in window)) return;
+    try{
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 0.95; u.pitch = 1.15; u.volume = 1; u.lang = "en-US";
+      speechSynthesis.speak(u);
+    }catch(e){}
+  }
+  $("speaker").addEventListener("click", () => { ensureAudio(); if(lastSpeech) speak(lastSpeech); });
+
+  // ---------- Problem generation ----------
+  // Addition: a + b ≤ 20 (both ≥ 1).  Subtraction: single digit only (a ≤ 9, answer ≥ 0).
+  function makeProblem(){
+    const food = pick(FOODS);
+    const isAdd = Math.random() < 0.5;
+    let a,b,answer,type,maxChoice;
+    if(isAdd){
+      const total = 2 + rnd(19);   // total 2..20
+      a = 1 + rnd(total - 1);      // 1..total-1
+      b = total - a;               // ≥ 1, so a + b = total ≤ 20
+      answer = total; type = "add"; maxChoice = 20;
+    }else{
+      a = 2 + rnd(8);              // 2..9  (single-digit minuend)
+      b = 1 + rnd(a);              // monster eats 1..a
+      answer = a - b; type = "sub"; maxChoice = 9;   // answer 0..8, single digit
+    }
+    // 5 unique choices in 0..maxChoice, including the answer, clustered near it
+    const set = new Set([answer]);
+    let guard = 0;
+    while(set.size < 5 && guard++ < 160){
+      const d = answer + (rnd(9) - 4);   // ±4
+      if(d >= 0 && d <= maxChoice) set.add(d);
+    }
+    while(set.size < 5){ set.add(rnd(maxChoice + 1)); }
+    return { food, type, a, b, answer, choices: shuffle([...set]) };
+  }
+
+  function render(p){
+    monster.classList.remove("eating","sad");
+    fruitsEl.innerHTML = ""; ansEl.innerHTML = "";
+    // shrink the fruit as the count grows so up to 20 always fit without scrolling
+    const count = p.type === "add" ? p.a + p.b : p.a;
+    fruitsEl.className = count > 15 ? "d4" : count > 10 ? "d3" : count > 6 ? "d2" : "d1";
+
+    if(p.type === "add"){
+      const g1 = document.createElement("span"); g1.className = "grp";
+      g1.textContent = p.food.repeat(p.a);
+      const op = document.createElement("span"); op.className = "op"; op.textContent = "＋";
+      const g2 = document.createElement("span"); g2.className = "grp";
+      g2.textContent = p.food.repeat(p.b);
+      fruitsEl.append(g1, op, g2);
+      eqEl.textContent = `${p.a} + ${p.b} = ?`;
+    }else{
+      const g = document.createElement("span"); g.className = "grp";
+      for(let i=0;i<p.a;i++){
+        const s = document.createElement("span");
+        s.textContent = p.food;
+        if(i >= p.a - p.b) s.className = "eaten";  // monster already ate these
+        g.appendChild(s);
+      }
+      fruitsEl.append(g);
+      eqEl.textContent = `${p.a} − ${p.b} = ?`;
+    }
+
+    p.choices.forEach(v => {
+      const btn = document.createElement("button");
+      btn.className = "ans"; btn.textContent = v;
+      btn.addEventListener("click", () => onAnswer(v, btn));
+      ansEl.appendChild(btn);
+    });
+
+    const fn = FOOD_NAMES[p.food] || "yummies";
+    if(p.type === "add") speak(`How many ${fn}? ${p.a} plus ${p.b}.`);
+    else speak(`There were ${p.a} ${fn}. The monster ate ${p.b}. How many are left?`);
+  }
+
+  function nextProblem(){
+    locked = false;
+    current = makeProblem();
+    render(current);
+  }
+
+  // ---------- Answering ----------
+  const PRAISE = ["Yay!","Yum!","Great!","Nice!","Wow!","Woohoo!"];
+  function onAnswer(val, btn){
+    if(locked) return;
+    if(val === current.answer){
+      locked = true;
+      btn.classList.add("right");
+      monster.classList.add("eating");
+      [...fruitsEl.querySelectorAll(".grp > *")].forEach((el,i) => {
+        el.style.animationDelay = (i*0.05)+"s"; el.classList.add("go");
+      });
+      playCorrect();
+      const word = pick(PRAISE);
+      speak(`${word} ${current.answer}. Yum yum!`);
+      showToast(`${word} 🎉`);
+      confetti();
+      addStar();
+      setTimeout(nextProblem, 1900);
+    }else{
+      btn.classList.add("wrong");
+      monster.classList.remove("sad"); void monster.offsetWidth;
+      monster.classList.add("sad");
+      playWrong();
+      speak("Oops! Try again.");
+      setTimeout(() => monster.classList.remove("sad"), 500);
+    }
+  }
+
+  function addStar(){
+    stars++;
+    starCountEl.textContent = stars;
+    const s = $("stars"); s.classList.remove("pop"); void s.offsetWidth; s.classList.add("pop");
+    if(stars % 5 === 0){
+      setTimeout(() => { playStar(); showToast(`⭐ ${stars} stars! ⭐`); speak(`Amazing! You have ${stars} stars!`); }, 700);
+    }
+  }
+
+  function showToast(txt){
+    toast.textContent = txt;
+    toast.classList.remove("show"); void toast.offsetWidth; toast.classList.add("show");
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => { toast.textContent = ""; }, 1600);
+  }
+
+  const CONF = ["#ff6b6b","#ffd93d","#4dabf7","#51cf66","#ff8fab","#7b6cff"];
+  function confetti(){
+    for(let i=0;i<44;i++){
+      const c = document.createElement("div");
+      c.className = "confetti";
+      c.style.left = rnd(100)+"vw";
+      c.style.background = pick(CONF);
+      c.style.borderRadius = rnd(2) ? "50%" : "2px";
+      c.style.animationDuration = (1.1 + Math.random()*1.1)+"s";
+      c.style.animationDelay = (Math.random()*0.3)+"s";
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 2600);
+    }
+  }
+
+  // ---------- Start ----------
+  $("play").addEventListener("click", () => {
+    ensureAudio();
+    if("speechSynthesis" in window){ try{ speechSynthesis.getVoices(); }catch(e){} }
+    $("start").style.display = "none";
+    speak("Let's feed the monster!");
+    setTimeout(nextProblem, 400);
+  });
+})();
+</script>
+</body>
+</html>
