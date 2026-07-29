@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Story Order 📖</title>
+<style>
+  :root{
+    --bg1:#fff3e0; --bg2:#fce4ec; --bg3:#e8eaf6;
+    --card:#ffffff; --ink:#33324a; --good:#2fbf87; --sel:#ffd23f;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; overflow:hidden; overscroll-behavior:none; }
+  body{
+    font-family:"Comic Sans MS","Baloo 2",system-ui,-apple-system,"Segoe UI",sans-serif;
+    color:var(--ink);
+    background:linear-gradient(160deg,var(--bg1),var(--bg2) 55%,var(--bg3));
+    background-attachment:fixed;
+    overflow:hidden; user-select:none; touch-action:manipulation;
+    display:flex; flex-direction:column; align-items:center;
+    height:100dvh;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  button{ touch-action:manipulation; font-family:inherit; }
+
+  /* ---- Top bar ---- */
+  #topbar{ width:100%; max-width:640px; padding:12px 20px;
+    display:flex; justify-content:space-between; align-items:center; gap:12px; }
+  #stars{ background:rgba(255,255,255,.85); border-radius:999px; padding:8px 18px;
+    font-size:clamp(20px,5vw,30px); font-weight:800; display:flex; align-items:center; gap:6px;
+    box-shadow:0 4px 0 rgba(0,0,0,.12); }
+  #stars.pop{ animation:pop .5s ease; }
+  #speaker{ background:rgba(255,255,255,.85); border:none; border-radius:999px;
+    width:clamp(50px,12vw,60px); height:clamp(50px,12vw,60px); font-size:clamp(22px,6vw,30px);
+    cursor:pointer; box-shadow:0 4px 0 rgba(0,0,0,.12); }
+  #speaker:active{ transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.12); }
+  .tb-left{ display:flex; align-items:center; gap:10px; }
+  .homeBtn{ background:rgba(255,255,255,.85); border-radius:999px;
+    width:clamp(46px,11vw,58px); height:clamp(46px,11vw,58px);
+    display:flex; align-items:center; justify-content:center; font-size:clamp(22px,5.5vw,28px);
+    text-decoration:none; box-shadow:0 4px 0 rgba(0,0,0,.12); }
+  .homeBtn:active{ transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.12); }
+
+  /* ---- Hint ---- */
+  #hint{ color:#3a3a5a; font-weight:800; text-align:center; padding:0 16px clamp(2px,0.8vh,6px);
+    font-size:clamp(16px,4.5vw,24px); text-shadow:0 1px 0 rgba(255,255,255,.4); }
+  #storyTitle{ color:#7a5a8a; font-weight:800; text-align:center; padding:0 16px clamp(2px,0.8vh,6px);
+    font-size:clamp(14px,3.8vw,20px); }
+
+  /* ---- Slots (timeline) ---- */
+  #slots{
+    display:flex; justify-content:center; align-items:center; gap:clamp(4px,1.5vw,10px);
+    padding:clamp(6px,1.5vh,14px) 12px; width:100%; max-width:540px;
+  }
+  .slot{
+    flex:1; height:clamp(54px,14vw,85px); border-radius:20px;
+    border:3px dashed rgba(0,0,0,.15); background:rgba(255,255,255,.3);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    position:relative; transition:border-color .2s;
+  }
+  .slot.next{ border-color:var(--sel); border-style:solid; background:rgba(255,210,63,.12); }
+  .slot.filled{ border-style:solid; border-color:var(--good); background:#e8f8f0; }
+  .slot .num{ position:absolute; top:3px; left:7px; font-size:clamp(9px,2.5vw,13px);
+    font-weight:800; color:rgba(0,0,0,.22); }
+  .slot .placed{ font-size:clamp(28px,8vw,48px); line-height:1;
+    filter:drop-shadow(0 2px 3px rgba(0,0,0,.12)); animation:placeIn .35s ease; }
+  .slot .stepLabel{ font-size:clamp(8px,2.2vw,11px); font-weight:700; color:var(--good);
+    max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 4px; }
+  @keyframes placeIn{ 0%{transform:scale(0);} 60%{transform:scale(1.15);} 100%{transform:scale(1);} }
+
+  /* Arrow between slots */
+  .arrow{ flex:0 0 auto; font-size:clamp(14px,3.5vw,20px); color:rgba(0,0,0,.2); }
+
+  /* ---- Cards to pick from ---- */
+  #stage{ flex:1; width:100%; max-width:540px; display:flex; flex-direction:column;
+    justify-content:center; align-items:center; padding:0 12px; min-height:0; }
+  #cards{
+    display:grid; grid-template-columns:repeat(2, 1fr);
+    gap:clamp(8px,2vw,14px); width:100%;
+  }
+  .card{
+    background:var(--card); border-radius:22px; border:none; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:clamp(4px,1vh,8px); padding:clamp(12px,3vw,20px) clamp(8px,2vw,14px);
+    box-shadow:0 6px 0 rgba(0,0,0,.16); transition:transform .1s, box-shadow .1s, opacity .3s;
+  }
+  .card:active{ transform:translateY(3px); box-shadow:0 3px 0 rgba(0,0,0,.16); }
+  .card .em{ font-size:clamp(40px,12vw,68px); line-height:1;
+    filter:drop-shadow(0 2px 4px rgba(0,0,0,.12)); }
+  .card .lbl{ font-size:clamp(12px,3.2vw,17px); font-weight:700; color:#5a5a78;
+    text-align:center; line-height:1.2; }
+  .card.used{ opacity:.2; pointer-events:none; transform:scale(.9); }
+  .card.wrong{ animation:nope .4s ease; }
+
+  @keyframes nope{ 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)}
+    40%{transform:translateX(8px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }
+  @keyframes pop{ 0%{transform:translate(-50%,-50%) scale(0)} 60%{transform:translate(-50%,-50%) scale(1.15)} 100%{transform:translate(-50%,-50%) scale(1)} }
+
+  /* ---- Confetti + toast ---- */
+  .confetti{ position:fixed; top:-20px; width:14px; height:14px; z-index:50; animation:fall linear forwards; }
+  @keyframes fall{ to{ transform:translateY(105dvh) rotate(720deg); } }
+  #toast{ position:fixed; top:38%; left:50%; transform:translate(-50%,-50%) scale(0);
+    font-size:clamp(32px,9vw,58px); font-weight:900; color:#fff; z-index:60;
+    text-shadow:0 4px 0 rgba(0,0,0,.2); pointer-events:none; text-align:center; }
+  #toast.show{ animation:pop .8s ease; }
+
+  /* ---- Start screen ---- */
+  #start{ position:fixed; inset:0; z-index:100;
+    background:linear-gradient(160deg,var(--bg1),var(--bg2) 55%,var(--bg3));
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; text-align:center; padding:20px; }
+  #start .big{ font-size:clamp(70px,22vw,130px); animation:bob 2.2s ease-in-out infinite; }
+  @keyframes bob{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+  #start h1{ font-size:clamp(30px,8vw,52px); color:#3a3a5a; text-shadow:0 3px 0 rgba(255,255,255,.4); }
+  #start p{ color:#4a4a68; font-size:clamp(15px,4vw,20px); opacity:.95; max-width:26ch; }
+  #play{ background:var(--good); color:#fff; border:none; border-radius:999px;
+    font-size:clamp(26px,7vw,38px); font-weight:800; padding:16px 50px; cursor:pointer; box-shadow:0 8px 0 rgba(0,0,0,.2); }
+  #play:active{ transform:translateY(4px); box-shadow:0 4px 0 rgba(0,0,0,.2); }
+
+  /* ---- Landscape ---- */
+  @media (orientation:landscape) and (max-height:500px){
+    #topbar{ padding:4px 14px; }
+    #hint{ font-size:clamp(13px,3.4vw,18px); padding:0 12px 0; }
+    #storyTitle{ font-size:clamp(11px,2.8vw,15px); padding:0 12px 0; }
+    #stars{ padding:4px 12px; font-size:clamp(15px,3.5vw,22px); }
+    #speaker{ width:38px; height:38px; font-size:18px; }
+    .homeBtn{ width:38px; height:38px; font-size:18px; }
+    #slots{ padding:2px 10px; }
+    .slot{ height:clamp(36px,11vh,55px); }
+    .slot .placed{ font-size:clamp(20px,7vh,36px); }
+    #stage{ padding:0 10px; }
+    #cards{ grid-template-columns:repeat(4, 1fr); gap:clamp(4px,1vw,10px); }
+    .card{ padding:clamp(6px,1.5vh,12px) 6px; }
+    .card .em{ font-size:clamp(26px,8vh,44px); }
+    .card .lbl{ font-size:clamp(9px,2.5vh,13px); }
+  }
+</style>
+</head>
+<body>
+  <div id="topbar">
+    <div class="tb-left">
+      <a class="homeBtn" href="index.html" title="Home" aria-label="Home">🏠</a>
+      <div id="stars">⭐ <span id="starCount">0</span></div>
+    </div>
+    <button id="speaker" title="Say it again">🔊</button>
+  </div>
+  <div id="hint">Put the story in order!</div>
+  <div id="storyTitle"></div>
+
+  <div id="slots"></div>
+
+  <div id="stage">
+    <div id="cards"></div>
+  </div>
+
+  <div id="toast"></div>
+
+  <div id="start">
+    <div class="big">📖</div>
+    <h1>Story Order!</h1>
+    <p>Tap the pictures in the right order to tell the story.</p>
+    <button id="play">▶ Play</button>
+  </div>
+
+<script>
+(function(){
+  const STORIES = [
+    { title:"Morning Routine", steps:[
+      {e:"⏰",w:"Wake up"},{e:"🛏️",w:"Make bed"},{e:"🪥",w:"Brush teeth"},{e:"🥣",w:"Eat breakfast"}
+    ]},
+    { title:"Going to School", steps:[
+      {e:"🎒",w:"Pack bag"},{e:"👋",w:"Say bye"},{e:"🚌",w:"Ride the bus"},{e:"🏫",w:"Arrive at school"}
+    ]},
+    { title:"Baking a Cake", steps:[
+      {e:"📖",w:"Read recipe"},{e:"🥚",w:"Mix ingredients"},{e:"🔥",w:"Bake in oven"},{e:"🎂",w:"Decorate cake"}
+    ]},
+    { title:"Planting a Seed", steps:[
+      {e:"🕳️",w:"Dig a hole"},{e:"🌰",w:"Plant seed"},{e:"💧",w:"Water it"},{e:"🌻",w:"Flower grows"}
+    ]},
+    { title:"Building a Snowman", steps:[
+      {e:"❄️",w:"Snow falls"},{e:"⛄",w:"Roll snowballs"},{e:"🥕",w:"Add nose"},{e:"🎩",w:"Put on hat"}
+    ]},
+    { title:"Going Swimming", steps:[
+      {e:"🩱",w:"Put on swimsuit"},{e:"🧴",w:"Apply sunscreen"},{e:"🏊",w:"Swim in pool"},{e:"🧖",w:"Dry off"}
+    ]},
+    { title:"Making a Sandwich", steps:[
+      {e:"🍞",w:"Get bread"},{e:"🥜",w:"Spread peanut butter"},{e:"🍓",w:"Add jelly"},{e:"🥪",w:"Close sandwich"}
+    ]},
+    { title:"Bedtime Routine", steps:[
+      {e:"🛁",w:"Take a bath"},{e:"🩷",w:"Put on pajamas"},{e:"📚",w:"Read a story"},{e:"😴",w:"Fall asleep"}
+    ]},
+    { title:"Painting a Picture", steps:[
+      {e:"🎨",w:"Get paints"},{e:"🖌️",w:"Dip brush"},{e:"🖼️",w:"Paint picture"},{e:"✨",w:"Show it off"}
+    ]},
+    { title:"Catching a Fish", steps:[
+      {e:"🎣",w:"Get fishing rod"},{e:"🪱",w:"Put on bait"},{e:"🌊",w:"Cast the line"},{e:"🐟",w:"Catch a fish"}
+    ]},
+    { title:"Making Lemonade", steps:[
+      {e:"🍋",w:"Squeeze lemons"},{e:"💧",w:"Add water"},{e:"🍬",w:"Add sugar"},{e:"🥤",w:"Pour and drink"}
+    ]},
+    { title:"Getting a Pet", steps:[
+      {e:"🏪",w:"Visit pet shop"},{e:"🐶",w:"Choose a puppy"},{e:"🏠",w:"Bring it home"},{e:"❤️",w:"Love your pet"}
+    ]},
+    { title:"Rainy Day", steps:[
+      {e:"☁️",w:"Clouds gather"},{e:"🌧️",w:"Rain starts"},{e:"☂️",w:"Open umbrella"},{e:"🌈",w:"Rainbow appears"}
+    ]},
+    { title:"Birthday Party", steps:[
+      {e:"🎈",w:"Blow up balloons"},{e:"🎂",w:"Light candles"},{e:"🎵",w:"Sing happy birthday"},{e:"🎁",w:"Open presents"}
+    ]},
+    { title:"Cooking Pasta", steps:[
+      {e:"🫙",w:"Boil water"},{e:"🍝",w:"Add pasta"},{e:"🍅",w:"Make sauce"},{e:"🍽️",w:"Serve and eat"}
+    ]},
+    { title:"Going to the Beach", steps:[
+      {e:"🚗",w:"Drive to beach"},{e:"🏖️",w:"Set up towel"},{e:"🏄",w:"Play in waves"},{e:"🌅",w:"Watch sunset"}
+    ]},
+    { title:"Sending a Letter", steps:[
+      {e:"✏️",w:"Write letter"},{e:"✉️",w:"Put in envelope"},{e:"📮",w:"Mail it"},{e:"📬",w:"Letter arrives"}
+    ]},
+    { title:"Growing a Butterfly", steps:[
+      {e:"🥚",w:"Egg is laid"},{e:"🐛",w:"Caterpillar hatches"},{e:"🫘",w:"Makes cocoon"},{e:"🦋",w:"Butterfly emerges"}
+    ]},
+    { title:"Making a Snowball", steps:[
+      {e:"🧤",w:"Put on gloves"},{e:"❄️",w:"Scoop up snow"},{e:"🤲",w:"Pack it tight"},{e:"🎯",w:"Throw snowball"}
+    ]},
+    { title:"Brushing Your Dog", steps:[
+      {e:"🐕",w:"Call the dog"},{e:"🪮",w:"Get the brush"},{e:"✨",w:"Brush the fur"},{e:"🦴",w:"Give a treat"}
+    ]},
+    { title:"Flying a Kite", steps:[
+      {e:"🪁",w:"Get the kite"},{e:"🏃",w:"Run with it"},{e:"💨",w:"Wind lifts it"},{e:"🎉",w:"Kite soars high"}
+    ]},
+    { title:"Washing Hands", steps:[
+      {e:"🚰",w:"Turn on water"},{e:"🧼",w:"Add soap"},{e:"🤲",w:"Scrub hands"},{e:"🧻",w:"Dry with towel"}
+    ]},
+    { title:"Riding a Bike", steps:[
+      {e:"⛑️",w:"Put on helmet"},{e:"🚲",w:"Get on bike"},{e:"🏎️",w:"Pedal fast"},{e:"🏁",w:"Reach the park"}
+    ]},
+    { title:"Apple Picking", steps:[
+      {e:"🚜",w:"Go to farm"},{e:"🌳",w:"Find apple tree"},{e:"🍎",w:"Pick apples"},{e:"🧺",w:"Fill the basket"}
+    ]},
+    { title:"Making Popcorn", steps:[
+      {e:"🌽",w:"Get the kernels"},{e:"🍳",w:"Heat the pot"},{e:"🍿",w:"Kernels pop"},{e:"🧈",w:"Add butter"}
+    ]},
+    { title:"Getting Dressed", steps:[
+      {e:"👕",w:"Put on shirt"},{e:"👖",w:"Put on pants"},{e:"🧦",w:"Put on socks"},{e:"👟",w:"Put on shoes"}
+    ]},
+    { title:"Making Orange Juice", steps:[
+      {e:"🍊",w:"Pick oranges"},{e:"🔪",w:"Cut in half"},{e:"🍊",w:"Squeeze juice"},{e:"🥛",w:"Pour in glass"}
+    ]},
+    { title:"Doctor Visit", steps:[
+      {e:"🤒",w:"Feel sick"},{e:"🏥",w:"Go to doctor"},{e:"💊",w:"Take medicine"},{e:"😊",w:"Feel better"}
+    ]},
+    { title:"Camping Trip", steps:[
+      {e:"🚗",w:"Drive to woods"},{e:"⛺",w:"Set up tent"},{e:"🔥",w:"Make campfire"},{e:"🌟",w:"Look at stars"}
+    ]},
+    { title:"Making a Card", steps:[
+      {e:"📄",w:"Fold paper"},{e:"✏️",w:"Draw a picture"},{e:"❤️",w:"Write a message"},{e:"🎁",w:"Give the card"}
+    ]},
+    { title:"Pizza Night", steps:[
+      {e:"📞",w:"Order pizza"},{e:"🛵",w:"Pizza delivered"},{e:"📦",w:"Open the box"},{e:"🍕",w:"Eat the pizza"}
+    ]},
+    { title:"Cleaning Your Room", steps:[
+      {e:"🧸",w:"Pick up toys"},{e:"🧹",w:"Sweep the floor"},{e:"🛏️",w:"Make the bed"},{e:"✨",w:"Room is clean"}
+    ]},
+    { title:"Making a Friend", steps:[
+      {e:"👋",w:"Say hello"},{e:"😊",w:"Share a smile"},{e:"🎮",w:"Play together"},{e:"🤝",w:"Become friends"}
+    ]},
+    { title:"Building with Blocks", steps:[
+      {e:"🧱",w:"Get the blocks"},{e:"📐",w:"Plan the tower"},{e:"🏗️",w:"Stack them up"},{e:"🏰",w:"Tower is done"}
+    ]},
+    { title:"Doing Laundry", steps:[
+      {e:"👕",w:"Gather clothes"},{e:"🫧",w:"Wash in machine"},{e:"☀️",w:"Hang to dry"},{e:"👔",w:"Fold and put away"}
+    ]},
+    { title:"Treasure Hunt", steps:[
+      {e:"🗺️",w:"Find a map"},{e:"🔍",w:"Follow the clues"},{e:"🕳️",w:"Dig the spot"},{e:"💎",w:"Find treasure"}
+    ]},
+    { title:"Magic Show", steps:[
+      {e:"🎩",w:"Get the hat"},{e:"🪄",w:"Wave the wand"},{e:"✨",w:"Say the words"},{e:"🐰",w:"Rabbit appears"}
+    ]},
+    { title:"Making Ice Cream", steps:[
+      {e:"🥛",w:"Mix milk and cream"},{e:"🍓",w:"Add flavor"},{e:"🧊",w:"Freeze it"},{e:"🍦",w:"Scoop and eat"}
+    ]},
+    { title:"Train Journey", steps:[
+      {e:"🎫",w:"Buy a ticket"},{e:"🚉",w:"Wait at station"},{e:"🚂",w:"Board the train"},{e:"🏙️",w:"Arrive in city"}
+    ]},
+    { title:"Feeding the Birds", steps:[
+      {e:"🍞",w:"Get some bread"},{e:"🏞️",w:"Go to the park"},{e:"🤲",w:"Scatter the crumbs"},{e:"🐦",w:"Birds come eat"}
+    ]},
+    { title:"Making Bubbles", steps:[
+      {e:"🧴",w:"Get bubble soap"},{e:"🫧",w:"Dip the wand"},{e:"💨",w:"Blow gently"},{e:"🫧",w:"Bubbles float away"}
+    ]},
+    { title:"Space Adventure", steps:[
+      {e:"🧑‍🚀",w:"Put on spacesuit"},{e:"🚀",w:"Launch rocket"},{e:"🌙",w:"Land on moon"},{e:"🏴",w:"Plant the flag"}
+    ]},
+    { title:"Frog Life Cycle", steps:[
+      {e:"🥚",w:"Eggs in pond"},{e:"〰️",w:"Tadpole swims"},{e:"🦎",w:"Grows legs"},{e:"🐸",w:"Becomes a frog"}
+    ]},
+    { title:"Movie Night", steps:[
+      {e:"🍿",w:"Make popcorn"},{e:"📺",w:"Pick a movie"},{e:"🛋️",w:"Sit on couch"},{e:"🎬",w:"Watch the movie"}
+    ]},
+    { title:"Brushing Teeth", steps:[
+      {e:"🪥",w:"Get toothbrush"},{e:"🧴",w:"Add toothpaste"},{e:"😁",w:"Brush all teeth"},{e:"💧",w:"Rinse and spit"}
+    ]},
+    { title:"Making Hot Chocolate", steps:[
+      {e:"🥛",w:"Heat the milk"},{e:"🍫",w:"Add chocolate"},{e:"🥄",w:"Stir it up"},{e:"☕",w:"Drink and enjoy"}
+    ]},
+    { title:"Grocery Shopping", steps:[
+      {e:"📝",w:"Write a list"},{e:"🏪",w:"Go to store"},{e:"🛒",w:"Fill the cart"},{e:"💰",w:"Pay and leave"}
+    ]},
+    { title:"Learning to Read", steps:[
+      {e:"🔤",w:"Learn the letters"},{e:"📝",w:"Sound them out"},{e:"📖",w:"Read a word"},{e:"📚",w:"Read a book"}
+    ]},
+    { title:"Chicken Life Cycle", steps:[
+      {e:"🥚",w:"Egg is laid"},{e:"🐣",w:"Chick hatches"},{e:"🐥",w:"Chick grows"},{e:"🐔",w:"Becomes chicken"}
+    ]},
+    { title:"Making a Salad", steps:[
+      {e:"🥬",w:"Wash lettuce"},{e:"🥒",w:"Chop veggies"},{e:"🫒",w:"Add toppings"},{e:"🥗",w:"Toss and serve"}
+    ]},
+  ];
+
+  const $ = id => document.getElementById(id);
+  const slotsEl = $("slots"), cardsEl = $("cards"), starCountEl = $("starCount");
+  const toast = $("toast"), titleEl = $("storyTitle");
+
+  let stars = 0, locked = false, lastSpeech = "";
+  let currentStory = null, nextIdx = 0;
+  let usedIndices = new Set();
+
+  const rnd = n => Math.floor(Math.random()*n);
+  const pick = arr => arr[rnd(arr.length)];
+  const shuffle = a => { for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];} return a; };
+
+  // ---------- Audio ----------
+  let actx = null, masterGain = null;
+  function ensureAudio(){
+    if(!actx){
+      try{
+        actx = new (window.AudioContext||window.webkitAudioContext)();
+        masterGain = actx.createGain(); masterGain.gain.value = 0.85;
+        const comp = actx.createDynamicsCompressor();
+        masterGain.connect(comp); comp.connect(actx.destination);
+      }catch(e){}
+    }
+    if(actx && actx.state === "suspended") actx.resume();
+  }
+  function tone(freq, start, dur, type, peak){
+    if(!actx) return;
+    const t0 = actx.currentTime + start;
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type || "sine"; o.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(peak || 0.22, t0 + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); g.connect(masterGain);
+    o.start(t0); o.stop(t0 + dur + 0.03);
+  }
+  const playCorrect = () => { ensureAudio(); tone(523.25 * (1 + nextIdx * 0.12), 0, 0.25, "sine", 0.25); };
+  const playWrong   = () => { ensureAudio(); tone(392,0,0.18,"sine",0.2); tone(311,0.13,0.26,"sine",0.2); };
+  const playWin     = () => { ensureAudio(); [523.25,659.25,783.99,1046.5].forEach((f,i)=>tone(f, i*0.12, 0.4, "sine", 0.28)); };
+
+  // ---------- Speech ----------
+  let voice = null;
+  function chooseVoice(){
+    if(!("speechSynthesis" in window)) return;
+    const vs = speechSynthesis.getVoices(); if(!vs.length) return;
+    const prefer = ["Google US English","Samantha",
+      "Microsoft Aria Online (Natural) - English (United States)","Microsoft Aria",
+      "Microsoft Jenny Online (Natural) - English (United States)","Microsoft Zira","Karen","Moira","Alex"];
+    voice = prefer.map(n => vs.find(v => v.name === n)).find(Boolean)
+         || vs.find(v => /en[-_]US/i.test(v.lang) && /google|aria|jenny|zira|samantha|female/i.test(v.name))
+         || vs.find(v => /en[-_]US/i.test(v.lang)) || vs.find(v => /^en/i.test(v.lang)) || vs[0];
+  }
+  if("speechSynthesis" in window){ chooseVoice(); speechSynthesis.onvoiceschanged = chooseVoice; }
+  let speakToken = 0;
+  function speak(text){
+    lastSpeech = text;
+    if(!("speechSynthesis" in window)) return;
+    const my = ++speakToken;
+    try{ speechSynthesis.cancel(); }catch(e){}
+    setTimeout(() => {
+      if(my !== speakToken) return;
+      try{
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        if(voice) u.voice = voice;
+        u.rate = 0.92; u.pitch = 1.05; u.volume = 1; u.lang = (voice && voice.lang) || "en-US";
+        speechSynthesis.speak(u);
+      }catch(e){}
+    }, 45);
+  }
+  $("speaker").addEventListener("click", () => { ensureAudio(); if(lastSpeech) speak(lastSpeech); });
+
+  // ---------- Pick story ----------
+  function pickStoryIndex(){
+    if(usedIndices.size >= STORIES.length) usedIndices.clear();
+    let idx;
+    do { idx = rnd(STORIES.length); } while(usedIndices.has(idx));
+    usedIndices.add(idx);
+    return idx;
+  }
+
+  // ---------- Build a round ----------
+  function newRound(){
+    locked = false; nextIdx = 0;
+    slotsEl.innerHTML = ""; cardsEl.innerHTML = "";
+
+    const idx = pickStoryIndex();
+    currentStory = STORIES[idx];
+    titleEl.textContent = "📖 " + currentStory.title;
+
+    for(let i = 0; i < currentStory.steps.length; i++){
+      if(i > 0){
+        const arrow = document.createElement("span");
+        arrow.className = "arrow";
+        arrow.textContent = "→";
+        slotsEl.appendChild(arrow);
+      }
+      const slot = document.createElement("div");
+      slot.className = "slot" + (i === 0 ? " next" : "");
+      const num = document.createElement("span");
+      num.className = "num";
+      num.textContent = i + 1;
+      slot.appendChild(num);
+      slotsEl.appendChild(slot);
+    }
+
+    const shuffled = shuffle(currentStory.steps.map((s, i) => ({...s, idx: i})));
+
+    shuffled.forEach(step => {
+      const btn = document.createElement("button");
+      btn.className = "card";
+      btn.dataset.idx = step.idx;
+      btn.innerHTML = `<span class="em">${step.e}</span><span class="lbl">${step.w}</span>`;
+      btn.addEventListener("click", () => tapCard(btn, step));
+      cardsEl.appendChild(btn);
+    });
+
+    speak(currentStory.title + ". What happens first?");
+  }
+
+  // ---------- Tap a card ----------
+  function tapCard(btn, step){
+    if(locked || btn.classList.contains("used")) return;
+    ensureAudio();
+
+    if(step.idx === nextIdx){
+      playCorrect();
+      btn.classList.add("used");
+      speak(step.w + "!");
+
+      const slots = slotsEl.querySelectorAll(".slot");
+      const slot = slots[nextIdx];
+      slot.classList.remove("next");
+      slot.classList.add("filled");
+
+      const placed = document.createElement("span");
+      placed.className = "placed";
+      placed.textContent = step.e;
+      slot.appendChild(placed);
+
+      const label = document.createElement("span");
+      label.className = "stepLabel";
+      label.textContent = step.w;
+      slot.appendChild(label);
+
+      nextIdx++;
+      if(nextIdx < currentStory.steps.length){
+        slots[nextIdx].classList.add("next");
+        const prompts = ["What comes next?", "And then?", "What happens after that?"];
+        speak(step.w + "! " + prompts[Math.min(nextIdx - 1, prompts.length - 1)]);
+      } else {
+        locked = true;
+        addStar(); burst(25);
+        playWin();
+        showToast("🎉 Great story!");
+
+        const full = currentStory.steps.map(s => s.w).join(", then ");
+        setTimeout(() => speak(full + "! Great job!"), 400);
+        setTimeout(newRound, 2800);
+      }
+    } else {
+      playWrong();
+      btn.classList.add("wrong");
+      speak("Not yet! What happens " + (nextIdx === 0 ? "first" : "next") + "?");
+      setTimeout(() => btn.classList.remove("wrong"), 450);
+    }
+  }
+
+  // ---------- Rewards ----------
+  function addStar(){
+    stars++; starCountEl.textContent = stars;
+    const s = $("stars"); s.classList.remove("pop"); void s.offsetWidth; s.classList.add("pop");
+  }
+  function showToast(txt){
+    toast.textContent = txt;
+    toast.classList.remove("show"); void toast.offsetWidth; toast.classList.add("show");
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => { toast.textContent = ""; }, 1900);
+  }
+  const CONF = ["#ff6b6b","#ffd93d","#4dabf7","#51cf66","#ff8fab","#9775fa"];
+  function burst(n){
+    for(let i=0;i<n;i++){
+      const c = document.createElement("div");
+      c.className = "confetti";
+      c.style.left = rnd(100)+"vw";
+      c.style.background = pick(CONF);
+      c.style.borderRadius = rnd(2) ? "50%" : "2px";
+      c.style.animationDuration = (1.1 + Math.random()*1.1)+"s";
+      c.style.animationDelay = (Math.random()*0.25)+"s";
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 2600);
+    }
+  }
+
+  // ---------- Start ----------
+  $("play").addEventListener("click", () => {
+    ensureAudio();
+    $("start").style.display = "none";
+    newRound();
+  });
+})();
+</script>
+</body>
+</html>
